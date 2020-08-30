@@ -2,6 +2,7 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="8dp">
@@ -10,28 +11,31 @@
         android:id="@+id/rxActionText"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:scrollbars="vertical|horizontal"
         android:background="@drawable/drawable_border"
         android:padding="8dp"
         android:layout_marginRight="8dp"
-        android:text="RxLog"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toLeftOf="@+id/coroutineActionText"
+        tools:text="RxLog"
         />
 
     <androidx.appcompat.widget.AppCompatTextView
         android:id="@+id/coroutineActionText"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:scrollbars="vertical|horizontal"
+        android:textIsSelectable="true"
         android:background="@drawable/drawable_border"
         android:padding="8dp"
         android:layout_marginLeft="8dp"
-        android:text="CoroutineLog"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toRightOf="@+id/rxActionText"
         app:layout_constraintRight_toRightOf="parent"
+        tools:text="CoroutineLog"
         />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

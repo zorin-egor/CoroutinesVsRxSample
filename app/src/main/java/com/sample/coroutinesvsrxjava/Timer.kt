@@ -1,4 +1,4 @@
-package com.sample.coroutinevsrxjava
+package com.sample.coroutinesvsrxjava
 
 import android.os.CountDownTimer
 

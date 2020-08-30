@@ -1,3 +1,5 @@
 <resources>
-    <string name="app_name">CoroutineVsRxJava</string>
+    <string name="app_name">CoroutinesVsRxJava</string>
+    <string name="app_log_rx">Rx log:</string>
+    <string name="app_log_coroutine">Coroutine log:</string>
 </resources>
