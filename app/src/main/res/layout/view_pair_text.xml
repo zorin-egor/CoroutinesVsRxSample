@@ -7,35 +7,54 @@
     android:layout_height="match_parent"
     android:padding="8dp">
 
-    <androidx.appcompat.widget.AppCompatTextView
-        android:id="@+id/rxActionText"
+    <ScrollView
+        android:id="@+id/rxActionScroll"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:scrollbars="vertical|horizontal"
-        android:background="@drawable/drawable_border"
-        android:padding="8dp"
         android:layout_marginRight="8dp"
+        android:background="@drawable/drawable_background_border"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toLeftOf="@+id/coroutineActionText"
-        tools:text="RxLog"
-        />
+        app:layout_constraintRight_toLeftOf="@+id/coroutineActionScroll">
 
-    <androidx.appcompat.widget.AppCompatTextView
-        android:id="@+id/coroutineActionText"
+        <HorizontalScrollView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/rxActionText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="8dp"
+                tools:text="RxLog"
+                />
+        </HorizontalScrollView>
+    </ScrollView>
+
+    <ScrollView
+        android:id="@+id/coroutineActionScroll"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:scrollbars="vertical|horizontal"
-        android:textIsSelectable="true"
-        android:background="@drawable/drawable_border"
-        android:padding="8dp"
-        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:background="@drawable/drawable_background_border"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toRightOf="@+id/rxActionText"
         app:layout_constraintRight_toRightOf="parent"
-        tools:text="CoroutineLog"
-        />
+        app:layout_constraintLeft_toRightOf="@+id/rxActionScroll">
+
+        <HorizontalScrollView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/coroutineActionText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="8dp"
+                tools:text="CoroutineLog"
+                />
+        </HorizontalScrollView>
+    </ScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
