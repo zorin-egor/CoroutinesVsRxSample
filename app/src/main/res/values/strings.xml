@@ -3,4 +3,10 @@
     <string name="log_rx">Rx log:\n</string>
     <string name="log_coroutine">Coroutine log:\n</string>
     <string name="simultaneous_action">Is simultaneous action</string>
+
+    <string-array name="button_titles">
+        <item>Single</item>
+        <item>Map</item>
+    </string-array>
+
 </resources>

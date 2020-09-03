@@ -11,14 +11,20 @@ import android.util.TypedValue
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.CheckBox
 import android.widget.ScrollView
 import android.widget.TextView
+import androidx.activity.viewModels
 import androidx.annotation.ColorRes
+import androidx.annotation.IdRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.content.ContextCompat
+import com.sample.coroutinesvsrxjava.managers.toSpanned
+import com.sample.coroutinesvsrxjava.viewmodels.CoroutineViewModel
+import com.sample.coroutinesvsrxjava.viewmodels.RxViewModel
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.activity_main.view.*
 import kotlinx.android.synthetic.main.view_pair_text.*
@@ -29,6 +35,10 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private val TAG = MainActivity::class.java.simpleName
     }
+
+    private val mRxViewModel: RxViewModel by viewModels()
+
+    private val mCoroutineViewModel: CoroutineViewModel by viewModels()
 
     private val rxLog: TextView
         get() = textLayout.rxActionText
@@ -48,6 +58,10 @@ class MainActivity : AppCompatActivity() {
     private val isSimultaneousAction: Boolean
         get() = isSimultaneousCheckBox.isChecked
 
+    private val buttonsTitles: Array<String> by lazy {
+        resources.getStringArray(R.array.button_titles)
+    }
+
     private val onTouchListener = View.OnTouchListener { view, event ->
         when ((event.actionMasked)) {
             MotionEvent.ACTION_MOVE -> {
@@ -60,6 +74,36 @@ class MainActivity : AppCompatActivity() {
             }
         }
         false
+    }
+
+    private val onClickListener = View.OnClickListener {
+        when ((it.parent as? ViewGroup)?.id) {
+            R.id.singleLayout -> {
+                setButtonsAction(it.id, {
+                    finish()
+                }) {
+
+                }
+            }
+            R.id.mapLayout -> {
+
+            }
+        }
+    }
+
+    private fun setButtonsAction(@IdRes buttonsId: Int, actionRx: () -> Unit,  actionCoroutine: () -> Unit) {
+        when {
+            isSimultaneousAction -> {
+                actionRx()
+                actionCoroutine()
+            }
+            R.id.rxActionButton == buttonsId -> {
+                actionRx()
+            }
+            R.id.coroutineActionButton == buttonsId -> {
+                actionCoroutine()
+            }
+        }
     }
 
 
@@ -86,6 +130,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun init(savedInstanceState: Bundle?) {
+
+        mRxViewModel.toString()
+        mCoroutineViewModel.toString()
+
         rxLog.apply {
             text = getString(R.string.log_rx).toSpanned(this@MainActivity, android.R.color.black, Typeface.BOLD)
             setTextIsSelectable(true)
@@ -99,6 +147,17 @@ class MainActivity : AppCompatActivity() {
         isSimultaneousCheckBox.setOnCheckedChangeListener { view, isChecked ->
             setBackground(isChecked)
         }
+
+        buttonsContainer.forEachChild { container, i ->
+            (container as? ViewGroup)?.forEachChild { view, j ->
+                (view as? Button)?.apply {
+                    setOnClickListener(onClickListener)
+                    text = buttonsTitles.getOrNull(i) ?: "-"
+                }
+            }
+        }
+
+
 
         (0..100).forEach {
             rxLog.append(it.toString(), R.color.colorAccent, Typeface.BOLD) {
@@ -119,7 +178,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun View.getVisibleRect(leftOffset: Int = 0, rightOffset: Int = 0): Rect {
+    private fun View.getVisibleRect(leftOffset: Int, rightOffset: Int): Rect {
         return Rect().apply {
             guideLine.getGlobalVisibleRect(this)
             left -= leftOffset.toDp().toInt()
@@ -127,10 +186,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun ViewGroup.forEachChild(action: (View) -> Unit) {
-        (0 until buttonsContainer.childCount).forEach { index ->
+    private fun ViewGroup.forEachChild(action: (View, Int) -> Unit) {
+        (0 until childCount).forEach { index ->
             getChildAt(index)?.also { view ->
-                action(view)
+                action(view, index)
             }
         }
     }
@@ -142,8 +201,8 @@ class MainActivity : AppCompatActivity() {
     private fun setBackground(isChecked: Boolean) {
         val colorStart = ContextCompat.getColor(this, if (isChecked) android.R.color.transparent else R.color.colorAccent)
         val colorEnd = ContextCompat.getColor(this, if (isChecked) R.color.colorAccent else android.R.color.transparent)
-        buttonsContainer.forEachChild {
-            ObjectAnimator.ofObject(it, "backgroundColor", ArgbEvaluator(), colorStart, colorEnd).apply {
+        buttonsContainer.forEachChild { view, index ->
+            ObjectAnimator.ofObject(view, "backgroundColor", ArgbEvaluator(), colorStart, colorEnd).apply {
                 duration = 1000
             }.start()
         }
@@ -156,8 +215,8 @@ class MainActivity : AppCompatActivity() {
             val value = if (isTransition) {
                 TransitionManager.beginDelayedTransition(layout)
                 when {
-                    bias < 0.3 -> 0.0f
-                    bias > 0.7 -> 1.0f
+                    bias < 0.1 -> 0.0f
+                    bias > 0.9 -> 1.0f
                     0.35 < bias && bias < 0.65 -> 0.5f
                     else -> bias
                 }
