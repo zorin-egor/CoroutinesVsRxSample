@@ -6,7 +6,11 @@
 
     <string-array name="button_titles">
         <item>Single</item>
-        <item>Map</item>
+        <item>Observer</item>
     </string-array>
+
+    <string name="action_start">start</string>
+    <string name="action_progress">progress - %1$s</string>
+    <string name="action_result">result - %1$s</string>
 
 </resources>

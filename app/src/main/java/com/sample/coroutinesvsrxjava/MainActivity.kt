@@ -6,6 +6,7 @@ import android.content.res.Resources
 import android.graphics.Rect
 import android.graphics.Typeface
 import android.os.Bundle
+import android.text.Spanned
 import android.transition.TransitionManager
 import android.util.TypedValue
 import android.view.MotionEvent
@@ -16,7 +17,6 @@ import android.widget.CheckBox
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.activity.viewModels
-import androidx.annotation.ColorRes
 import androidx.annotation.IdRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -78,13 +78,7 @@ class MainActivity : AppCompatActivity() {
 
     private val onClickListener = View.OnClickListener {
         when ((it.parent as? ViewGroup)?.id) {
-            R.id.singleLayout -> {
-                setButtonsAction(it.id, {
-                    finish()
-                }) {
-
-                }
-            }
+            R.id.singleLayout -> setButtonsAction(it.id, mRxViewModel::single, mCoroutineViewModel::single)
             R.id.mapLayout -> {
 
             }
@@ -130,19 +124,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun init(savedInstanceState: Bundle?) {
-
-        mRxViewModel.toString()
-        mCoroutineViewModel.toString()
-
-        rxLog.apply {
-            text = getString(R.string.log_rx).toSpanned(this@MainActivity, android.R.color.black, Typeface.BOLD)
-            setTextIsSelectable(true)
-        }
-
-        coroutineLog.apply {
-            text = getString(R.string.log_coroutine).toSpanned(this@MainActivity, android.R.color.black, Typeface.BOLD)
-            setTextIsSelectable(true)
-        }
+        setRxInitialText()
+        setCoroutineInitialText()
 
         isSimultaneousCheckBox.setOnCheckedChangeListener { view, isChecked ->
             setBackground(isChecked)
@@ -157,17 +140,45 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        setData()
+    }
 
+    private fun setData() {
+        mCoroutineViewModel.result.observe(this) {
+            when (it) {
+                null -> setCoroutineInitialText()
+                else -> coroutineLog.append(it!!) {
+                    coroutineScroll.scrollDown()
+                }
+            }
+        }
 
-        (0..100).forEach {
-            rxLog.append(it.toString(), R.color.colorAccent, Typeface.BOLD) {
-                rxScroll.scrollDown()
+        mRxViewModel.result.observe(this) {
+            when (it) {
+                null -> setRxInitialText()
+                else -> rxLog.append(it!!) {
+                    rxScroll.scrollDown()
+                }
             }
         }
     }
 
-    private fun TextView.append(text: String, @ColorRes color: Int, style: Int, action: () -> Unit) {
-        append(text.toSpanned(context, color, style))
+    private fun setRxInitialText() {
+        rxLog.apply {
+            text = getString(R.string.log_rx).toSpanned(this@MainActivity, android.R.color.black, Typeface.BOLD)
+            setTextIsSelectable(true)
+        }
+    }
+
+    private fun setCoroutineInitialText() {
+        coroutineLog.apply {
+            text = getString(R.string.log_coroutine).toSpanned(this@MainActivity, android.R.color.black, Typeface.BOLD)
+            setTextIsSelectable(true)
+        }
+    }
+
+    private fun TextView.append(text: Spanned, action: () -> Unit) {
+        append(text)
         append("\n")
         action()
     }

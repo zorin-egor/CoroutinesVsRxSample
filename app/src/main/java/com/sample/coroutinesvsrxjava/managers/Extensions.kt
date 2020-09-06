@@ -11,6 +11,8 @@ import android.text.style.StyleSpan
 import androidx.annotation.ColorInt
 import androidx.annotation.ColorRes
 import androidx.core.content.ContextCompat
+import java.text.SimpleDateFormat
+import java.util.*
 
 
 fun Long.toMinutes(): String {
@@ -28,6 +30,10 @@ fun String.toSpanned(@ColorInt color: Int, style: Int = Typeface.NORMAL): Spanne
         setSpan(StyleSpan(style), 0, this@toSpanned.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         setSpan(ForegroundColorSpan(color), 0, this@toSpanned.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
     }
+}
+
+fun getTime(format: String = "HH:mm:ss"): String {
+    return SimpleDateFormat(format).format(Date())
 }
 
 operator fun Spanned.plus(value: Spanned): Spanned {
