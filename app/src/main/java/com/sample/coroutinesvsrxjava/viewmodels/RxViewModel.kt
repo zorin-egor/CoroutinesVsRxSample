@@ -27,9 +27,10 @@ class RxViewModel(application: Application) : AndroidViewModel(application), Act
         .subscribeOn(Schedulers.io())
         .observeOn(AndroidSchedulers.mainThread())
         .doOnSubscribe {
-            startMessage(getApplication())
-        }.subscribe { result ->
-            resultMessage(getApplication(), result)
+            start(getApplication())
+        }
+        .subscribe { result ->
+            result(getApplication(), result)
         }
     }
 

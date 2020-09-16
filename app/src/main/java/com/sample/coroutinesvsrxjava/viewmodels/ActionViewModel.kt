@@ -16,31 +16,44 @@ interface ActionViewModel {
     val result: MutableLiveData<Spanned?>
 
     fun longAction(delay: Long = 3000): UInt {
-        Thread.sleep(delay)
-        return Random.nextUInt() % 100U
+        return try {
+            Thread.sleep(delay)
+            Random.nextUInt() % 99U + 1U
+        } catch (e: InterruptedException) {
+            0U
+        }
     }
 
     fun longActionProgress(delay: Long = 3000, progress: (Int) -> Unit): UInt {
-        val parts = 10
-        (0..parts).forEach {
-            progress(it)
-            Thread.sleep(delay / parts)
+        return try {
+            val parts = 10
+            (0..parts).forEach {
+                progress(it)
+                Thread.sleep(delay / parts)
+            }
+            Random.nextUInt() % 99U + 1U
+        } catch (e: InterruptedException) {
+            0U
         }
-        return Random.nextUInt() % 100U
     }
 
-    fun startMessage(context: Context) {
+    fun <T> message(context: Context, value: T) {
+        result.value = (getTime() + ": ").toSpanned(context, R.color.colorText) +
+                value.toString().toSpanned(context, R.color.colorResult)
+    }
+
+    fun start(context: Context) {
         result.value = null
         result.value = (getTime() + ": ").toSpanned(context, R.color.colorText) +
                 context.getString(R.string.action_start).toSpanned(context, R.color.colorStart)
     }
 
-    fun <T> progressMessage(context: Context, value: T) {
+    fun <T> progress(context: Context, value: T) {
         result.value = (getTime() + ": ").toSpanned(context, R.color.colorText) +
                 context.getString(R.string.action_progress, value.toString()).toSpanned(context, R.color.colorProgress)
     }
 
-    fun <T> resultMessage(context: Context, value: T) {
+    fun <T> result(context: Context, value: T) {
         result.value = (getTime() + ": ").toSpanned(context, R.color.colorText) +
                 context.getString(R.string.action_result, value.toString()).toSpanned(context, R.color.colorResult)
     }

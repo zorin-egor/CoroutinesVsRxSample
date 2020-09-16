@@ -7,8 +7,8 @@
     android:layout_height="match_parent"
     android:padding="8dp">
 
-    <ScrollView
-        android:id="@+id/rxActionScroll"
+    <HorizontalScrollView
+        android:id="@+id/rxActionHorizontalScroll"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginRight="2dp"
@@ -18,9 +18,11 @@
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toLeftOf="@+id/guideLine">
 
-        <HorizontalScrollView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
+        <ScrollView
+            android:id="@+id/rxActionScroll"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true">
 
             <androidx.appcompat.widget.AppCompatTextView
                 android:id="@+id/rxActionText"
@@ -29,8 +31,9 @@
                 android:padding="8dp"
                 tools:text="RxLog"
                 />
-        </HorizontalScrollView>
-    </ScrollView>
+        </ScrollView>
+    </HorizontalScrollView>
+
 
     <View
         android:id="@+id/guideLine"
@@ -48,8 +51,8 @@
         app:layout_constraintHorizontal_bias="0.5"
         />
 
-    <ScrollView
-        android:id="@+id/coroutineActionScroll"
+    <HorizontalScrollView
+        android:id="@+id/coroutineActionHorizontalScroll"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginLeft="2dp"
@@ -59,9 +62,11 @@
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintLeft_toRightOf="@+id/guideLine">
 
-        <HorizontalScrollView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
+        <ScrollView
+            android:id="@+id/coroutineActionScroll"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true">
 
             <androidx.appcompat.widget.AppCompatTextView
                 android:id="@+id/coroutineActionText"
@@ -70,7 +75,7 @@
                 android:padding="8dp"
                 tools:text="CoroutineLog"
                 />
-        </HorizontalScrollView>
-    </ScrollView>
+        </ScrollView>
+    </HorizontalScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

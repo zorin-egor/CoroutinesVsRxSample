@@ -226,8 +226,8 @@ class MainActivity : AppCompatActivity() {
             val value = if (isTransition) {
                 TransitionManager.beginDelayedTransition(layout)
                 when {
-                    bias < 0.1 -> 0.0f
-                    bias > 0.9 -> 1.0f
+                    bias < 0.1 -> 0.1f
+                    bias > 0.9 -> 0.9f
                     0.35 < bias && bias < 0.65 -> 0.5f
                     else -> bias
                 }

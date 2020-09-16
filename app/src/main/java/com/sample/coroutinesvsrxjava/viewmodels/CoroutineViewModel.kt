@@ -5,10 +5,7 @@ import android.text.Spanned
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 
 class CoroutineViewModel(application: Application) : AndroidViewModel(application), ActionViewModel {
 
@@ -20,14 +17,30 @@ class CoroutineViewModel(application: Application) : AndroidViewModel(applicatio
 
     override val result = MutableLiveData<Spanned?>()
 
+    private suspend fun suspendLongAction(): UInt {
+        return runInterruptible(block = ::longAction)
+    }
+
+    private suspend fun suspendLongActionProgress(progress: (Int) -> Unit): UInt {
+        return runInterruptible {
+            longActionProgress{
+                progress(it)
+            }
+        }
+    }
+
     override fun single() {
         job?.cancel()
         job = viewModelScope.launch {
-            startMessage(getApplication())
+            start(getApplication())
             val result = withContext(Dispatchers.IO) {
-                longAction()
+                suspendLongAction()
             }
-            resultMessage(getApplication(), result)
+            result(getApplication(), result)
+        }.apply {
+            invokeOnCompletion {
+                message(getApplication(), "invokeOnCompletion(${it?.message ?: ""})")
+            }
         }
     }
 
