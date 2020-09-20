@@ -36,39 +36,8 @@
                 android:id="@+id/buttonsContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <include
-                    layout="@layout/view_pair_buttons"
-                    android:id="@+id/singleLayout"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_marginBottom="2dp"
-                    />
-
-                <include
-                    layout="@layout/view_pair_buttons"
-                    android:id="@+id/mapLayout"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_marginBottom="2dp"
-                    />
-
-                <include
-                    layout="@layout/view_pair_buttons"
-                    android:id="@+id/zipLayout"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_marginBottom="2dp"
-                    />
-
-                <include
-                    layout="@layout/view_pair_buttons"
-                    android:id="@+id/filterLayout"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    />
-            </LinearLayout>
+                android:orientation="vertical"
+                />
         </LinearLayout>
     </ScrollView>
 

@@ -4,13 +4,18 @@
     <string name="log_coroutine">Coroutine log:\n</string>
     <string name="simultaneous_action">Is simultaneous action</string>
 
+    <string name="action_type_single">Single</string>
+    <string name="action_type_observer">Observable</string>
+    <string name="action_type_flow">Flow</string>
+
     <string-array name="button_titles">
-        <item>Single</item>
-        <item>Observer</item>
+        <item>@string/action_type_single</item>
+        <item>@string/action_type_observer</item>
+        <item>@string/action_type_flow</item>
     </string-array>
 
     <string name="action_start">start</string>
-    <string name="action_progress">progress - %1$s</string>
+    <string name="action_emit">emit - %1$s</string>
     <string name="action_result">result - %1$s</string>
 
 </resources>

@@ -3,26 +3,22 @@ package com.sample.coroutinesvsrxjava
 import android.animation.ArgbEvaluator
 import android.animation.ObjectAnimator
 import android.content.res.Resources
-import android.graphics.Rect
 import android.graphics.Typeface
 import android.os.Bundle
-import android.text.Spanned
 import android.transition.TransitionManager
-import android.util.TypedValue
+import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.CheckBox
-import android.widget.ScrollView
-import android.widget.TextView
+import android.widget.*
 import androidx.activity.viewModels
 import androidx.annotation.IdRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.content.ContextCompat
-import com.sample.coroutinesvsrxjava.managers.toSpanned
+import androidx.core.view.updateMargins
+import com.sample.coroutinesvsrxjava.managers.*
 import com.sample.coroutinesvsrxjava.viewmodels.CoroutineViewModel
 import com.sample.coroutinesvsrxjava.viewmodels.RxViewModel
 import kotlinx.android.synthetic.main.activity_main.*
@@ -77,10 +73,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val onClickListener = View.OnClickListener {
-        when ((it.parent as? ViewGroup)?.id) {
-            R.id.singleLayout -> setButtonsAction(it.id, mRxViewModel::single, mCoroutineViewModel::single)
-            R.id.mapLayout -> {
-
+        when ((it.parent as? ViewGroup)?.tag) {
+            getString(R.string.action_type_single) -> {
+                setButtonsAction(it.id, mRxViewModel::single, mCoroutineViewModel::single)
+            }
+            getString(R.string.action_type_observer) -> {
+                setButtonsAction(it.id, mRxViewModel::observable, mCoroutineViewModel::observable)
+            }
+            getString(R.string.action_type_flow) -> {
+                setButtonsAction(it.id, mRxViewModel::flow, mCoroutineViewModel::flow)
             }
         }
     }
@@ -131,15 +132,7 @@ class MainActivity : AppCompatActivity() {
             setBackground(isChecked)
         }
 
-        buttonsContainer.forEachChild { container, i ->
-            (container as? ViewGroup)?.forEachChild { view, j ->
-                (view as? Button)?.apply {
-                    setOnClickListener(onClickListener)
-                    text = buttonsTitles.getOrNull(i) ?: "-"
-                }
-            }
-        }
-
+        addButtonsToContainer()
         setData()
     }
 
@@ -148,7 +141,7 @@ class MainActivity : AppCompatActivity() {
             when (it) {
                 null -> setCoroutineInitialText()
                 else -> coroutineLog.append(it!!) {
-                    coroutineScroll.scrollDown()
+                    coroutineScroll.scrollBottom()
                 }
             }
         }
@@ -157,7 +150,7 @@ class MainActivity : AppCompatActivity() {
             when (it) {
                 null -> setRxInitialText()
                 else -> rxLog.append(it!!) {
-                    rxScroll.scrollDown()
+                    rxScroll.scrollBottom()
                 }
             }
         }
@@ -177,37 +170,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun TextView.append(text: Spanned, action: () -> Unit) {
-        append(text)
-        append("\n")
-        action()
-    }
 
-    private fun ScrollView.scrollDown() {
-        post {
-            fullScroll(ScrollView.FOCUS_DOWN)
-        }
-    }
-
-    private fun View.getVisibleRect(leftOffset: Int, rightOffset: Int): Rect {
-        return Rect().apply {
-            guideLine.getGlobalVisibleRect(this)
-            left -= leftOffset.toDp().toInt()
-            right += rightOffset.toDp().toInt()
-        }
-    }
-
-    private fun ViewGroup.forEachChild(action: (View, Int) -> Unit) {
-        (0 until childCount).forEach { index ->
-            getChildAt(index)?.also { view ->
-                action(view, index)
-            }
-        }
-    }
-
-    private fun Int.toDp(): Float {
-        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, toFloat(), resources.displayMetrics)
-    }
 
     private fun setBackground(isChecked: Boolean) {
         val colorStart = ContextCompat.getColor(this, if (isChecked) android.R.color.transparent else R.color.colorAccent)
@@ -239,6 +202,32 @@ class MainActivity : AppCompatActivity() {
                 clone(layout)
                 setHorizontalBias(guideLine.id, value)
                 applyTo(layout)
+            }
+        }
+    }
+
+    private fun addButtonsToContainer() {
+        buttonsTitles.forEach { title ->
+            buttonsContainer.addView(getButtonsLayout(title).also { container ->
+                container.layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.MATCH_PARENT
+                ).apply {
+                    updateMargins(bottom = 2.toDp(resources).toInt())
+                }
+            })
+        }
+    }
+
+    private fun getButtonsLayout(title: String): View {
+        return (LayoutInflater.from(this).inflate(R.layout.view_pair_buttons, null) as ViewGroup).apply {
+            id = View.generateViewId()
+            tag = title
+            forEachChild { view, i ->
+                (view as? Button)?.apply {
+                    setOnClickListener(onClickListener)
+                    text = title
+                }
             }
         }
     }
