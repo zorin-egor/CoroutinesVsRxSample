@@ -23,12 +23,6 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 
-fun Long.toMinutes(): String {
-    val s = this / 1000 % 60
-    val m = this / (1000 * 60) % 60
-    return String.format("%02d:%02d", m, s)
-}
-
 fun String.toSpanned(context: Context, @ColorRes color: Int, style: Int = Typeface.NORMAL): Spanned {
     return toSpanned(ContextCompat.getColor(context, color), style)
 }
