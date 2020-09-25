@@ -7,15 +7,33 @@
     <string name="action_type_single">Single</string>
     <string name="action_type_observer">Observable</string>
     <string name="action_type_flow">Flow</string>
+    <string name="action_type_callback">Callback</string>
+    <string name="action_type_timeout">Timeout</string>
+    <string name="action_type_combine_latest">Combine latest</string>
+    <string name="action_type_zip">Zip</string>
+    <string name="action_type_flat_map">Flat map</string>
+    <string name="action_type_switch_map">Switch map</string>
+    <string name="action_type_concat_map">Concat map</string>
+    <string name="action_type_distinct_until_changed">Distinct until changed</string>
+    <string name="action_type_distinct_debounce">Debounce</string>
 
     <string-array name="button_titles">
         <item>@string/action_type_single</item>
         <item>@string/action_type_observer</item>
         <item>@string/action_type_flow</item>
+        <item>@string/action_type_callback</item>
+        <item>@string/action_type_timeout</item>
+        <item>@string/action_type_combine_latest</item>
+        <item>@string/action_type_zip</item>
+        <item>@string/action_type_flat_map</item>
+        <item>@string/action_type_switch_map</item>
+        <item>@string/action_type_concat_map</item>
+        <item>@string/action_type_distinct_until_changed</item>
+        <item>@string/action_type_distinct_debounce</item>
     </string-array>
 
     <string name="action_start">start</string>
-    <string name="action_emit">emit - %1$s</string>
-    <string name="action_result">result - %1$s</string>
+    <string name="action_emit">emit: %1$s</string>
+    <string name="action_result">result: %1$s</string>
 
 </resources>

@@ -8,6 +8,7 @@ import com.sample.coroutinesvsrxjava.R
 import com.sample.coroutinesvsrxjava.managers.getTime
 import com.sample.coroutinesvsrxjava.managers.plus
 import com.sample.coroutinesvsrxjava.managers.toSpanned
+import kotlin.concurrent.thread
 import kotlin.random.Random
 import kotlin.random.nextUInt
 
@@ -40,6 +41,26 @@ interface ActionViewModel {
             }
         } catch (e: InterruptedException) {
             // Stub
+        }
+    }
+
+    fun threadActionResult(delay: Long = 1000, emitter: (UInt) -> Unit): Thread {
+        return thread {
+            emitter(longActionResult(delay))
+        }
+    }
+
+    fun threadActionEmit(
+        delay: Long = 3000,
+        count: UInt = 10U,
+        emitter: (UInt, UInt) -> Unit,
+        complete: () -> Unit
+    ): Thread {
+        return thread {
+            longActionEmit(delay, count) { index, value ->
+                emitter(index, value)
+            }
+            complete()
         }
     }
 
@@ -81,5 +102,23 @@ interface ActionViewModel {
     fun observable()
 
     fun flow(items: UInt = 1000U)
+
+    fun callback()
+
+    fun timeout()
+
+    fun combineLatest()
+
+    fun zip()
+
+    fun flatMap()
+
+    fun switchMap()
+
+    fun concatMap()
+
+    fun distinctUntilChanged()
+
+    fun debounce()
 
 }

@@ -2,7 +2,6 @@ package com.sample.coroutinesvsrxjava
 
 import android.animation.ArgbEvaluator
 import android.animation.ObjectAnimator
-import android.content.res.Resources
 import android.graphics.Typeface
 import android.os.Bundle
 import android.transition.TransitionManager
@@ -54,22 +53,10 @@ class MainActivity : AppCompatActivity() {
     private val isSimultaneousAction: Boolean
         get() = isSimultaneousCheckBox.isChecked
 
+    private var isGuidelineTouch: Boolean = false
+
     private val buttonsTitles: Array<String> by lazy {
         resources.getStringArray(R.array.button_titles)
-    }
-
-    private val onTouchListener = View.OnTouchListener { view, event ->
-        when ((event.actionMasked)) {
-            MotionEvent.ACTION_MOVE -> {
-                setGuidLineBias(event.rawX)
-                return@OnTouchListener true
-            }
-            MotionEvent.ACTION_UP -> {
-                setGuidLineBias(event.rawX, true)
-                return@OnTouchListener true
-            }
-        }
-        false
     }
 
     private val onClickListener = View.OnClickListener {
@@ -82,6 +69,33 @@ class MainActivity : AppCompatActivity() {
             }
             getString(R.string.action_type_flow) -> {
                 setButtonsAction(it.id, mRxViewModel::flow, mCoroutineViewModel::flow)
+            }
+            getString(R.string.action_type_callback) -> {
+                setButtonsAction(it.id, mRxViewModel::callback, mCoroutineViewModel::callback)
+            }
+            getString(R.string.action_type_timeout) -> {
+                setButtonsAction(it.id, mRxViewModel::timeout, mCoroutineViewModel::timeout)
+            }
+            getString(R.string.action_type_combine_latest) -> {
+                setButtonsAction(it.id, mRxViewModel::combineLatest, mCoroutineViewModel::combineLatest)
+            }
+            getString(R.string.action_type_zip) -> {
+                setButtonsAction(it.id, mRxViewModel::zip, mCoroutineViewModel::zip)
+            }
+            getString(R.string.action_type_flat_map) -> {
+                setButtonsAction(it.id, mRxViewModel::flatMap, mCoroutineViewModel::flatMap)
+            }
+            getString(R.string.action_type_switch_map) -> {
+                setButtonsAction(it.id, mRxViewModel::switchMap, mCoroutineViewModel::switchMap)
+            }
+            getString(R.string.action_type_concat_map) -> {
+                setButtonsAction(it.id, mRxViewModel::concatMap, mCoroutineViewModel::concatMap)
+            }
+            getString(R.string.action_type_distinct_until_changed) -> {
+                setButtonsAction(it.id, mRxViewModel::distinctUntilChanged, mCoroutineViewModel::distinctUntilChanged)
+            }
+            getString(R.string.action_type_distinct_debounce) -> {
+                setButtonsAction(it.id, mRxViewModel::debounce, mCoroutineViewModel::debounce)
             }
         }
     }
@@ -110,12 +124,25 @@ class MainActivity : AppCompatActivity() {
 
     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
         when ((event.actionMasked)) {
-            MotionEvent.ACTION_MOVE,
+            MotionEvent.ACTION_DOWN -> {
+                val rect = guideLine.getVisibleRect(40, 40)
+                isGuidelineTouch = rect.contains(event.rawX.toInt(), event.rawY.toInt())
+                if (isGuidelineTouch) {
+                    return true
+                }
+            }
+
+            MotionEvent.ACTION_MOVE -> {
+                if (isGuidelineTouch) {
+                    setGuidLineBias(event.rawX)
+                    return true
+                }
+            }
+
             MotionEvent.ACTION_UP -> {
-                guideLine.getVisibleRect(40, 40).takeIf {
-                    it.contains(event.rawX.toInt(), event.rawY.toInt())
-                }?.also {
-                    onTouchListener.onTouch(guideLine, event)
+                if (isGuidelineTouch) {
+                    setGuidLineBias(event.rawX, true)
+                    isGuidelineTouch = false
                     return true
                 }
             }
@@ -183,9 +210,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setGuidLineBias(horizontal: Float, isTransition: Boolean = false) {
-        (textLayout as? ConstraintLayout).also { layout ->
-            val width = Resources.getSystem().displayMetrics.widthPixels.toFloat()
-            val bias = horizontal / width
+        (textLayout as? ConstraintLayout)?.also { layout ->
+            val bias = horizontal / layout.width
             val value = if (isTransition) {
                 TransitionManager.beginDelayedTransition(layout)
                 when {

@@ -40,7 +40,7 @@ fun String.toSpanned(@ColorInt color: Int, style: Int = Typeface.NORMAL): Spanne
     }
 }
 
-fun getTime(format: String = "HH:mm:ss"): String {
+fun getTime(format: String = "HH:mm:ss.SSS"): String {
     return SimpleDateFormat(format).format(Date())
 }
 
