@@ -2,7 +2,6 @@ package com.sample.coroutinesvsrxjava.viewmodels
 
 import android.app.Application
 import android.text.Spanned
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.*
@@ -11,7 +10,7 @@ import kotlinx.coroutines.channels.sendBlocking
 import kotlinx.coroutines.flow.*
 import kotlin.coroutines.resume
 
-class CoroutineViewModel(application: Application) : AndroidViewModel(application), ActionViewModel {
+class CoroutineViewModel(application: Application) : BaseViewModel(application), Actions {
 
     companion object {
         val TAG = CoroutineViewModel::class.java.simpleName

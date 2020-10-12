@@ -2,7 +2,6 @@ package com.sample.coroutinesvsrxjava.viewmodels
 
 import android.app.Application
 import android.text.Spanned
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.BackpressureStrategy
@@ -13,7 +12,7 @@ import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import java.util.concurrent.TimeUnit
 
-class RxViewModel(application: Application) : AndroidViewModel(application), ActionViewModel {
+class RxViewModel(application: Application) : BaseViewModel(application), Actions {
 
     companion object {
         val TAG = RxViewModel::class.java.simpleName
