@@ -15,7 +15,7 @@ import kotlin.random.Random
 import kotlin.random.nextUInt
 
 
-abstract class BaseViewModel(application: Application) : AndroidViewModel(application){
+abstract class BaseViewModel(application: Application) : AndroidViewModel(application) {
 
     companion object {
         val TAG = BaseViewModel::class.java.simpleName
