@@ -238,7 +238,7 @@ class CoroutineViewModel(application: Application) : AndroidViewModel(applicatio
             }
             .flatMapMerge { pair ->
                 callbackFlow<String> {
-                    offer("----------")
+                    offer("---- $pair")
                     suspendLongActionEmit(delay = 2000, 4U) { index, value ->
                         sendBlocking("${index + 1U}-$value-${Thread.currentThread().id}")
                     }
@@ -267,7 +267,7 @@ class CoroutineViewModel(application: Application) : AndroidViewModel(applicatio
             }
             .flatMapLatest { pair ->
                 callbackFlow<String> {
-                    offer("----------")
+                    offer("---- $pair")
                     suspendLongActionEmit(delay = 2000, 4U) { index, value ->
                         sendBlocking("${index + 1U}-$value-${Thread.currentThread().id}")
                     }
@@ -296,7 +296,7 @@ class CoroutineViewModel(application: Application) : AndroidViewModel(applicatio
             }
             .flatMapConcat { pair ->
                 callbackFlow<String> {
-                    offer("----------")
+                    offer("---- $pair")
                     suspendLongActionEmit(delay = 2000, 4U) { index, value ->
                         sendBlocking("${index + 1U}-$value-${Thread.currentThread().id}")
                     }

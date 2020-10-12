@@ -218,7 +218,7 @@ class RxViewModel(application: Application) : AndroidViewModel(application), Act
         }
         .flatMap { pair ->
             Observable.create<String> { emitter ->
-                emitter.onNext("----------")
+                emitter.onNext("---- $pair")
                 val thread = threadActionEmit(2000, 4U, { index, value ->
                     emitter.onNext("${index + 1U}-$value-${Thread.currentThread().id}")
                 }, {
@@ -254,7 +254,7 @@ class RxViewModel(application: Application) : AndroidViewModel(application), Act
         }
         .switchMap { pair ->
             Observable.create<String> { emitter ->
-                emitter.onNext("----------")
+                emitter.onNext("---- $pair")
                 val thread = threadActionEmit(2000, 4U, { index, value ->
                     emitter.onNext("${index + 1U}-$value-${Thread.currentThread().id}")
                 }, {
@@ -290,7 +290,7 @@ class RxViewModel(application: Application) : AndroidViewModel(application), Act
         }
         .concatMap { pair ->
             Observable.create<String> { emitter ->
-                emitter.onNext("----------")
+                emitter.onNext("---- $pair")
                 val thread = threadActionEmit(2000, 4U, { index, value ->
                     emitter.onNext("${index + 1U}-$value-${Thread.currentThread().id}")
                 }, {
