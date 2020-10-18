@@ -1,6 +1,6 @@
 # Coroutine vs RxJava
 
-<b>CoroutineVsRxJava</b> - sample app for compare the two technologies.
+<b>CoroutineVsRxJava</b> - sample app for compare commands of the two technologies.
 
 ## Screenshots
 <p align="center">
