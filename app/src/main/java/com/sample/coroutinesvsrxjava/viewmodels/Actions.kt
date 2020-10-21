@@ -27,4 +27,6 @@ interface Actions {
 
     fun debounce()
 
+    fun eventBus()
+
 }

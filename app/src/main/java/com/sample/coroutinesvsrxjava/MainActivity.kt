@@ -97,6 +97,9 @@ class MainActivity : AppCompatActivity() {
             getString(R.string.action_type_distinct_debounce) -> {
                 setButtonsAction(it.id, mRxViewModel::debounce, mCoroutineViewModel::debounce)
             }
+            getString(R.string.action_type_event_bus) -> {
+                setButtonsAction(it.id, mRxViewModel::eventBus, mCoroutineViewModel::eventBus)
+            }
         }
     }
 
