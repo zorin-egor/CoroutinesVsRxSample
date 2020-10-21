@@ -385,14 +385,14 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
         compositeDisposable.add(
             bus.delaySubscription(500, TimeUnit.MILLISECONDS)
                 .subscribe {
-                    emit(getApplication(), "one: $it")
+                    emit(getApplication(), "one - $it")
                 }
         )
 
         compositeDisposable.add(
             bus.delaySubscription(1500, TimeUnit.MILLISECONDS)
                 .subscribe {
-                    emit(getApplication(), "two: $it")
+                    emit(getApplication(), "two - $it")
                 }
         )
 
