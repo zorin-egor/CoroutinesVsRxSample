@@ -231,6 +231,7 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
                     thread.interrupt()
                 }
             }
+            .observeOn(Schedulers.io())
             .flatMap { pair ->
                 Observable.create<String> { emitter ->
                     emitter.onNext("---- $pair")
@@ -269,6 +270,7 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
                     thread.interrupt()
                 }
             }
+            .observeOn(Schedulers.io())
             .switchMap { pair ->
                 Observable.create<String> { emitter ->
                     emitter.onNext("---- $pair")
@@ -307,6 +309,7 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
                     thread.interrupt()
                 }
             }
+            .observeOn(Schedulers.io())
             .concatMap { pair ->
                 Observable.create<String> { emitter ->
                     emitter.onNext("---- $pair")
