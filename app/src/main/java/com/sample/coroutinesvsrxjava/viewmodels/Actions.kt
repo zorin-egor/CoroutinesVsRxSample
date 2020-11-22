@@ -3,6 +3,8 @@ package com.sample.coroutinesvsrxjava.viewmodels
 
 interface Actions {
 
+    fun completable()
+
     fun single()
 
     fun observable()
@@ -28,5 +30,7 @@ interface Actions {
     fun debounce()
 
     fun eventBus()
+
+    fun chains()
 
 }

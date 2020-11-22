@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.text.Spanned
 import android.util.Log
+import androidx.annotation.ColorRes
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import com.sample.coroutinesvsrxjava.R
@@ -83,9 +84,9 @@ abstract class BaseViewModel(application: Application) : AndroidViewModel(applic
         result.value = message
     }
 
-    protected fun <T> emit(context: Context, value: T) {
+    protected fun <T> emit(context: Context, value: T, @ColorRes colorId: Int = R.color.colorProgress) {
         val message = (getTime() + ": ").toSpanned(context, R.color.colorText) +
-                context.getString(R.string.action_emit, value.toString()).toSpanned(context, R.color.colorProgress)
+                context.getString(R.string.action_emit, value.toString()).toSpanned(context, colorId)
 
         Log.d(TAG, message.toString())
         result.value = message

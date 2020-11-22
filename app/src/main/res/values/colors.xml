@@ -9,4 +9,10 @@
     <color name="colorStart">#FF0000</color>
     <color name="colorProgress">#000DFF</color>
     <color name="colorResult">#00C60A</color>
+
+    <color name="colorOne">#00BCD4</color>
+    <color name="colorTwo">#FF9800</color>
+    <color name="colorThree">#9C27B0</color>
+    <color name="colorFour">#4CAF50</color>
+
 </resources>

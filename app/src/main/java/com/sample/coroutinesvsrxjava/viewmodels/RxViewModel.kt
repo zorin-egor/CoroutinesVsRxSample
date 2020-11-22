@@ -3,16 +3,15 @@ package com.sample.coroutinesvsrxjava.viewmodels
 import android.app.Application
 import android.text.Spanned
 import androidx.lifecycle.MutableLiveData
+import com.sample.coroutinesvsrxjava.R
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
-import io.reactivex.rxjava3.core.BackpressureStrategy
-import io.reactivex.rxjava3.core.Flowable
-import io.reactivex.rxjava3.core.Observable
-import io.reactivex.rxjava3.core.Single
+import io.reactivex.rxjava3.core.*
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import io.reactivex.rxjava3.subjects.PublishSubject
 import java.util.concurrent.TimeUnit
 
+@ExperimentalUnsignedTypes
 class RxViewModel(application: Application) : BaseViewModel(application), Actions {
 
     companion object {
@@ -26,6 +25,22 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
     override fun onCleared() {
         compositeDisposable.clear()
         super.onCleared()
+    }
+
+    override fun completable() {
+        compositeDisposable.clear()
+        compositeDisposable.add(
+            Completable.fromAction(::longActionResult)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .doOnSubscribe {
+                    start(getApplication())
+                }.doFinally {
+                    message(getApplication(), "doFinally()")
+                }.subscribe {
+                    result(getApplication(), "Complete")
+                }
+        )
     }
 
     override fun single() {
@@ -49,7 +64,7 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
         compositeDisposable.add(
             Observable.create<Pair<UInt, UInt>> { emitter ->
                 val thread = threadActionEmit(emitter = { index, value ->
-                    emitter.onNext(Pair(index, value))
+                    emitter.onNext(index to value)
                 }, complete = {
                     emitter.onComplete()
                 })
@@ -76,7 +91,7 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
         compositeDisposable.add(
             Flowable.create<Pair<UInt, UInt>>({ emitter ->
                 longActionEmit(0, items) { index, value ->
-                    emitter.onNext(Pair(index, value))
+                    emitter.onNext(index to value)
                 }
                 emitter.onComplete()
             }, BackpressureStrategy.LATEST)
@@ -223,7 +238,7 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
         compositeDisposable.add(
             Observable.create<Pair<UInt, UInt>> { emitter ->
                 val thread = threadActionEmit(5000, 5U, { index, value ->
-                    emitter.onNext(Pair(index, value))
+                    emitter.onNext(index to value)
                 }, {
                     emitter.onComplete()
                 })
@@ -262,7 +277,7 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
         compositeDisposable.add(
             Observable.create<Pair<UInt, UInt>> { emitter ->
                 val thread = threadActionEmit(5000, 5U, { index, value ->
-                    emitter.onNext(Pair(index, value))
+                    emitter.onNext(index to value)
                 }, {
                     emitter.onComplete()
                 })
@@ -301,7 +316,7 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
         compositeDisposable.add(
             Observable.create<Pair<UInt, UInt>> { emitter ->
                 val thread = threadActionEmit(5000, 5U, { index, value ->
-                    emitter.onNext(Pair(index, value))
+                    emitter.onNext(index to value)
                 }, {
                     emitter.onComplete()
                 })
@@ -321,7 +336,7 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
                     emitter.setCancellable {
                         thread.interrupt()
                     }
-                }
+                }.observeOn(Schedulers.io())
             }
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
@@ -414,4 +429,58 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
         )
     }
 
+    override fun chains() {
+        compositeDisposable.clear()
+
+        val completable = Completable.fromAction(::longActionResult)
+            .observeOn(AndroidSchedulers.mainThread())
+            .doFinally { emit(getApplication(), "Complete done", R.color.colorOne) }
+
+        val single = Single.fromCallable(::longActionResult)
+            .observeOn(AndroidSchedulers.mainThread())
+            .doAfterSuccess { emit(getApplication(), "Single: ${it.toString()}", R.color.colorTwo) }
+            .doFinally { emit(getApplication(), "Single done") }
+
+        val observable = Observable.create<Pair<UInt, UInt>> { emiter ->
+            val thread = threadActionEmit(delay = 4000, count = 5U, { index, value ->
+                emiter.onNext(index to value)
+            }, {
+                emiter.onComplete()
+            })
+
+            emiter.setCancellable { thread.interrupt() }
+        }.observeOn(AndroidSchedulers.mainThread())
+            .doAfterNext { emit(getApplication(), "Observable: $it", R.color.colorThree) }
+            .doFinally { emit(getApplication(), "Observable done") }
+
+        val flowable = Flowable.create<Pair<UInt, UInt>> ({ emiter ->
+            val thread = threadActionEmit(delay = 2000, count = 5U, { index, value ->
+                emiter.onNext(index to value)
+            }, {
+                emiter.onComplete()
+            })
+
+            emiter.setCancellable { thread.interrupt() }
+        }, BackpressureStrategy.BUFFER)
+
+        completable
+            .observeOn(Schedulers.io())
+            .andThen(single)
+            .observeOn(Schedulers.io())
+            .flatMapObservable { observable }
+            .toFlowable(BackpressureStrategy.BUFFER)
+            .observeOn(Schedulers.io())
+            .switchMap { observableResult ->
+                flowable
+                    .observeOn(Schedulers.io())
+                    .map {
+                        "${observableResult.first} - $it - ${Thread.currentThread().id}"
+                    }
+            }
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .doOnSubscribe { start(getApplication()) }
+            .doFinally { message(getApplication(), "doFinally()") }
+            .subscribe { emit(getApplication(), it, R.color.colorFour) }
+    }
 }

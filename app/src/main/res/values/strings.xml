@@ -4,6 +4,7 @@
     <string name="log_coroutine">Coroutine log:\n</string>
     <string name="simultaneous_action">Is simultaneous action</string>
 
+    <string name="action_type_completable">Completable</string>
     <string name="action_type_single">Single</string>
     <string name="action_type_observer">Observable</string>
     <string name="action_type_flow">Flow</string>
@@ -17,8 +18,10 @@
     <string name="action_type_distinct_until_changed">Distinct until changed</string>
     <string name="action_type_distinct_debounce">Debounce</string>
     <string name="action_type_event_bus">Event bus</string>
+    <string name="action_type_chains">Chains</string>
 
     <string-array name="button_titles">
+        <item>@string/action_type_completable</item>
         <item>@string/action_type_single</item>
         <item>@string/action_type_observer</item>
         <item>@string/action_type_flow</item>
@@ -32,6 +35,7 @@
         <item>@string/action_type_distinct_until_changed</item>
         <item>@string/action_type_distinct_debounce</item>
         <item>@string/action_type_event_bus</item>
+        <item>@string/action_type_chains</item>
     </string-array>
 
     <string name="action_start">start</string>

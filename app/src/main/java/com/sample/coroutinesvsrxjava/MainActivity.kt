@@ -2,6 +2,7 @@ package com.sample.coroutinesvsrxjava
 
 import android.animation.ArgbEvaluator
 import android.animation.ObjectAnimator
+import android.annotation.SuppressLint
 import android.graphics.Typeface
 import android.os.Bundle
 import android.transition.TransitionManager
@@ -24,7 +25,12 @@ import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.activity_main.view.*
 import kotlinx.android.synthetic.main.view_pair_text.*
 import kotlinx.android.synthetic.main.view_pair_text.view.*
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 
+@ExperimentalCoroutinesApi
+@FlowPreview
+@ExperimentalUnsignedTypes
 class MainActivity : AppCompatActivity() {
 
     companion object {
@@ -61,6 +67,9 @@ class MainActivity : AppCompatActivity() {
 
     private val onClickListener = View.OnClickListener {
         when ((it.parent as? ViewGroup)?.tag) {
+            getString(R.string.action_type_completable) -> {
+                setButtonsAction(it.id, mRxViewModel::completable, mCoroutineViewModel::completable)
+            }
             getString(R.string.action_type_single) -> {
                 setButtonsAction(it.id, mRxViewModel::single, mCoroutineViewModel::single)
             }
@@ -99,6 +108,9 @@ class MainActivity : AppCompatActivity() {
             }
             getString(R.string.action_type_event_bus) -> {
                 setButtonsAction(it.id, mRxViewModel::eventBus, mCoroutineViewModel::eventBus)
+            }
+            getString(R.string.action_type_chains) -> {
+                setButtonsAction(it.id, mRxViewModel::chains, mCoroutineViewModel::chains)
             }
         }
     }
@@ -170,7 +182,7 @@ class MainActivity : AppCompatActivity() {
         mCoroutineViewModel.result.observe(this) {
             when (it) {
                 null -> setCoroutineInitialText()
-                else -> coroutineLog.append(it!!) {
+                else -> coroutineLog.append(it) {
                     coroutineScroll.scrollBottom()
                 }
             }
@@ -179,7 +191,7 @@ class MainActivity : AppCompatActivity() {
         mRxViewModel.result.observe(this) {
             when (it) {
                 null -> setRxInitialText()
-                else -> rxLog.append(it!!) {
+                else -> rxLog.append(it) {
                     rxScroll.scrollBottom()
                 }
             }
@@ -248,6 +260,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @SuppressLint("InflateParams")
     private fun getButtonsLayout(title: String): View {
         return (LayoutInflater.from(this).inflate(R.layout.view_pair_buttons, null) as ViewGroup).apply {
             id = View.generateViewId()

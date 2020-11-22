@@ -4,6 +4,7 @@ import android.app.Application
 import android.text.Spanned
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import com.sample.coroutinesvsrxjava.R
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
 import kotlinx.coroutines.channels.awaitClose
@@ -12,6 +13,9 @@ import kotlinx.coroutines.channels.sendBlocking
 import kotlinx.coroutines.flow.*
 import kotlin.coroutines.resume
 
+@FlowPreview
+@ExperimentalCoroutinesApi
+@ExperimentalUnsignedTypes
 class CoroutineViewModel(application: Application) : BaseViewModel(application), Actions {
 
     companion object {
@@ -32,8 +36,23 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
         }
     }
 
+    override fun completable() {
+        viewModelScope.coroutineContext.cancelChildren()
+        viewModelScope.launch {
+            start(getApplication())
+             withContext(Dispatchers.IO) {
+                suspendLongAction()
+            }
+            result(getApplication(), "Complete")
+        }.apply {
+            invokeOnCompletion {
+                message(getApplication(), "invokeOnCompletion(${it?.message ?: ""})")
+            }
+        }
+    }
+
     override fun single() {
-        viewModelScope?.coroutineContext?.cancelChildren()
+        viewModelScope.coroutineContext.cancelChildren()
         viewModelScope.launch {
             start(getApplication())
             val result = withContext(Dispatchers.IO) {
@@ -48,11 +67,11 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
     }
 
     override fun observable() {
-        viewModelScope?.coroutineContext?.cancelChildren()
+        viewModelScope.coroutineContext.cancelChildren()
         viewModelScope.launch {
-            callbackFlow<Pair<UInt, UInt>> {
+            callbackFlow {
                 val thread = threadActionEmit(emitter = { index, value ->
-                    sendBlocking(Pair(index, value))
+                    sendBlocking(index to value)
                 }, complete = {
                     close()
                 })
@@ -73,11 +92,11 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
     }
 
     override fun flow(items: UInt) {
-        viewModelScope?.coroutineContext?.cancelChildren()
+        viewModelScope.coroutineContext.cancelChildren()
         viewModelScope.launch {
-            callbackFlow<Pair<UInt, UInt>> {
+            callbackFlow {
                 suspendLongActionEmit(0, 1000U) { index, value ->
-                    offer(Pair(index, value))
+                    offer(index to value)
                 }
                 close()
             }
@@ -97,7 +116,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
     }
 
     override fun callback() {
-        viewModelScope?.coroutineContext?.cancelChildren()
+        viewModelScope.coroutineContext.cancelChildren()
         viewModelScope.launch {
             start(getApplication())
 
@@ -120,7 +139,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
     }
 
     override fun timeout() {
-        viewModelScope?.coroutineContext?.cancelChildren()
+        viewModelScope.coroutineContext.cancelChildren()
         viewModelScope.launch {
             start(getApplication())
 
@@ -145,7 +164,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
     }
 
     override fun combineLatest() {
-        val flowOne = callbackFlow<String> {
+        val flowOne = callbackFlow {
             val thread = threadActionEmit(5000, 5U, { index, value ->
                 sendBlocking((index + 1U).toString())
             }, {
@@ -167,7 +186,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
                 delay(250)
             }
 
-        viewModelScope?.coroutineContext?.cancelChildren()
+        viewModelScope.coroutineContext.cancelChildren()
         viewModelScope.launch {
             flowOne.combine(flowTwo) { value1, value2 ->
                 "$value1-$value2"
@@ -186,7 +205,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
     }
 
     override fun zip() {
-        val flowOne = callbackFlow<String> {
+        val flowOne = callbackFlow {
             val thread = threadActionEmit(5000, 5U, { index, value ->
                 sendBlocking((index + 1U).toString())
             }, {
@@ -208,7 +227,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
                 delay(250)
             }
 
-        viewModelScope?.coroutineContext?.cancelChildren()
+        viewModelScope.coroutineContext.cancelChildren()
         viewModelScope.launch {
             flowOne.zip(flowTwo) { value1, value2 ->
                 "$value1-$value2"
@@ -227,21 +246,31 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
     }
 
     override fun flatMap() {
-        viewModelScope?.coroutineContext?.cancelChildren()
+        viewModelScope.coroutineContext.cancelChildren()
         viewModelScope.launch {
-            callbackFlow<Pair<UInt, UInt>> {
-                suspendLongActionEmit(delay = 5000, 5U) { index, value ->
-                    sendBlocking(Pair(index, value))
+            callbackFlow {
+                val thread = threadActionEmit(delay = 5000, 5U, { index, value ->
+                    sendBlocking(index to value)
+                }, {
+                    close()
+                })
+
+                awaitClose {
+                    thread.interrupt()
                 }
-                close()
             }
             .flatMapMerge { pair ->
-                callbackFlow<String> {
+                callbackFlow {
                     offer("---- $pair")
-                    suspendLongActionEmit(delay = 2000, 4U) { index, value ->
+                    val thread = threadActionEmit(delay = 2000, 4U, { index, value ->
                         sendBlocking("${index + 1U}-$value-${Thread.currentThread().id}")
+                    }, {
+                        close()
+                    })
+
+                    awaitClose {
+                        thread.interrupt()
                     }
-                    close()
                 }
             }
             .flowOn(Dispatchers.IO)
@@ -256,21 +285,31 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
     }
 
     override fun switchMap() {
-        viewModelScope?.coroutineContext?.cancelChildren()
+        viewModelScope.coroutineContext.cancelChildren()
         viewModelScope.launch {
-            callbackFlow<Pair<UInt, UInt>> {
-                suspendLongActionEmit(delay = 5000, 5U) { index, value ->
-                    sendBlocking(Pair(index, value))
+            callbackFlow {
+                val thread = threadActionEmit(delay = 5000, 5U, { index, value ->
+                    sendBlocking(index to value)
+                }, {
+                    close()
+                })
+
+                awaitClose {
+                    thread.interrupt()
                 }
-                close()
             }
             .flatMapLatest { pair ->
-                callbackFlow<String> {
+                callbackFlow {
                     offer("---- $pair")
-                    suspendLongActionEmit(delay = 2000, 4U) { index, value ->
+                    val thread = threadActionEmit(delay = 2000, 4U, { index, value ->
                         sendBlocking("${index + 1U}-$value-${Thread.currentThread().id}")
+                    }, {
+                        close()
+                    })
+
+                    awaitClose {
+                        thread.interrupt()
                     }
-                    close()
                 }
             }
             .flowOn(Dispatchers.IO)
@@ -285,21 +324,31 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
     }
 
     override fun concatMap() {
-        viewModelScope?.coroutineContext?.cancelChildren()
+        viewModelScope.coroutineContext.cancelChildren()
         viewModelScope.launch {
-            callbackFlow<Pair<UInt, UInt>> {
-                suspendLongActionEmit(delay = 5000, 5U) { index, value ->
-                    sendBlocking(Pair(index, value))
+            callbackFlow {
+                val thread = threadActionEmit(delay = 5000, 5U, { index, value ->
+                    sendBlocking(index to value)
+                }, {
+                    close()
+                })
+
+                awaitClose {
+                    thread.interrupt()
                 }
-                close()
             }
             .flatMapConcat { pair ->
-                callbackFlow<String> {
+                callbackFlow {
                     offer("---- $pair")
-                    suspendLongActionEmit(delay = 2000, 4U) { index, value ->
+                    val thread = threadActionEmit(delay = 2000, 4U, { index, value ->
                         sendBlocking("${index + 1U}-$value-${Thread.currentThread().id}")
+                    }, {
+                        close()
+                    })
+
+                    awaitClose {
+                        thread.interrupt()
                     }
-                    close()
                 }
             }
             .flowOn(Dispatchers.IO)
@@ -314,7 +363,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
     }
 
     override fun distinctUntilChanged() {
-        viewModelScope?.coroutineContext?.cancelChildren()
+        viewModelScope.coroutineContext.cancelChildren()
         viewModelScope.launch {
             flowOf("hello", "hello", "world")
             .onEach {
@@ -334,7 +383,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
     }
 
     override fun debounce() {
-        viewModelScope?.coroutineContext?.cancelChildren()
+        viewModelScope.coroutineContext.cancelChildren()
         viewModelScope.launch {
             flowOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
             .onEach {
@@ -356,7 +405,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
     }
 
     override fun eventBus() {
-        viewModelScope?.coroutineContext?.cancelChildren()
+        viewModelScope.coroutineContext.cancelChildren()
 
         val bus = ConflatedBroadcastChannel<Int>()
 
@@ -386,4 +435,49 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
         }
     }
 
+    override fun chains() {
+        viewModelScope.coroutineContext.cancelChildren()
+        viewModelScope.launch {
+
+            start(getApplication())
+
+            withContext(Dispatchers.IO) { longActionResult() }
+            emit(getApplication(), "Complete done", R.color.colorOne)
+
+            val single = withContext(Dispatchers.IO) { longActionResult() }
+            emit(getApplication(), "Single: ${single.toString()}", R.color.colorTwo)
+            emit(getApplication(), "Single done")
+
+            callbackFlow {
+                val thread = threadActionEmit(delay = 4000, 5U, { index, value ->
+                    sendBlocking(index to value)
+                }, {
+                    close()
+                })
+
+                awaitClose { thread.interrupt() }
+            }
+            .flowOn(Dispatchers.IO)
+            .onCompletion { emit(getApplication(), "Observable done") }
+            .onEach { emit(getApplication(), "Observable: $it", R.color.colorThree) }
+            .flowOn(Dispatchers.Main)
+            .flatMapLatest { pair ->
+                callbackFlow {
+                    val thread = threadActionEmit(delay = 2000, 5U, { index, value ->
+                        sendBlocking("${pair.first} - ${index to value}) - ${Thread.currentThread().id}")
+                    }, {
+                        close()
+                    })
+
+                    awaitClose { thread.interrupt() }
+                }
+            }
+            .flowOn(Dispatchers.IO)
+            .collect { emit(getApplication(), it, R.color.colorFour) }
+        }.apply {
+            invokeOnCompletion {
+                message(getApplication(), "invokeOnCompletion(${it?.message ?: ""})")
+            }
+        }
+    }
 }
