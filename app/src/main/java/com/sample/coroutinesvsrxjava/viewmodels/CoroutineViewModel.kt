@@ -6,12 +6,10 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.sample.coroutinesvsrxjava.R
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.ConflatedBroadcastChannel
-import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.channels.consumeEach
-import kotlinx.coroutines.channels.sendBlocking
+import kotlinx.coroutines.channels.*
 import kotlinx.coroutines.flow.*
 import kotlin.coroutines.resume
+import kotlin.random.Random
 
 @FlowPreview
 @ExperimentalCoroutinesApi
@@ -39,14 +37,14 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
     override fun completable() {
         viewModelScope.coroutineContext.cancelChildren()
         viewModelScope.launch {
-            start(getApplication())
+            start()
              withContext(Dispatchers.IO) {
                 suspendLongAction()
             }
-            result(getApplication(), "Complete")
+            result("Complete")
         }.apply {
             invokeOnCompletion {
-                message(getApplication(), "invokeOnCompletion(${it?.message ?: ""})")
+                message("invokeOnCompletion(${it?.message ?: ""})")
             }
         }
     }
@@ -54,14 +52,14 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
     override fun single() {
         viewModelScope.coroutineContext.cancelChildren()
         viewModelScope.launch {
-            start(getApplication())
+            start()
             val result = withContext(Dispatchers.IO) {
                 suspendLongAction()
             }
-            result(getApplication(), result)
+            result(result)
         }.apply {
             invokeOnCompletion {
-                message(getApplication(), "invokeOnCompletion(${it?.message ?: ""})")
+                message("invokeOnCompletion(${it?.message ?: ""})")
             }
         }
     }
@@ -82,11 +80,11 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             }
             .flowOn(Dispatchers.IO)
             .onStart {
-                start(getApplication())
+                start()
             }.onCompletion {
-                message(getApplication(), "onCompletion(${it?.message ?: ""})")
+                message("onCompletion(${it?.message ?: ""})")
             }.collect { result ->
-                emit(getApplication(), result)
+                emit(result)
             }
         }
     }
@@ -104,13 +102,13 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             .conflate()
             .flowOn(Dispatchers.IO)
             .onStart {
-                start(getApplication())
+                start()
             }
             .onCompletion {
-                message(getApplication(), "onCompletion(${it?.message ?: ""})")
+                message("onCompletion(${it?.message ?: ""})")
             }
             .collect { result ->
-                emit(getApplication(), result)
+                emit(result)
             }
         }
     }
@@ -118,7 +116,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
     override fun callback() {
         viewModelScope.coroutineContext.cancelChildren()
         viewModelScope.launch {
-            start(getApplication())
+            start()
 
             val result = suspendCancellableCoroutine<UInt> { continuation ->
                 val thread = threadActionResult(2000) {
@@ -130,10 +128,10 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
                 }
             }
 
-            result(getApplication(), result)
+            result(result)
         }.apply {
             invokeOnCompletion {
-                message(getApplication(), "invokeOnCompletion(${it?.message ?: ""})")
+                message("invokeOnCompletion(${it?.message ?: ""})")
             }
         }
     }
@@ -141,7 +139,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
     override fun timeout() {
         viewModelScope.coroutineContext.cancelChildren()
         viewModelScope.launch {
-            start(getApplication())
+            start()
 
             val result = withTimeout(2000) {
                 suspendCancellableCoroutine<UInt> { continuation ->
@@ -155,10 +153,10 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
                 }
             }
 
-            result(getApplication(), result)
+            result(result)
         }.apply {
             invokeOnCompletion {
-                message(getApplication(), "invokeOnCompletion(${it?.message ?: ""})")
+                message("invokeOnCompletion(${it?.message ?: ""})")
             }
         }
     }
@@ -195,11 +193,11 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             }
             .flowOn(Dispatchers.IO)
             .onStart {
-                start(getApplication())
+                start()
             }.onCompletion {
-                message(getApplication(), "onCompletion(${it?.message ?: ""})")
+                message("onCompletion(${it?.message ?: ""})")
             }.collect { result ->
-                emit(getApplication(), result)
+                emit(result)
             }
         }
     }
@@ -236,11 +234,11 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             }
             .flowOn(Dispatchers.IO)
             .onStart {
-                start(getApplication())
+                start()
             }.onCompletion {
-                message(getApplication(), "onCompletion(${it?.message ?: ""})")
+                message("onCompletion(${it?.message ?: ""})")
             }.collect { result ->
-                emit(getApplication(), result)
+                emit(result)
             }
         }
     }
@@ -275,11 +273,11 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             }
             .flowOn(Dispatchers.IO)
             .onStart {
-                start(getApplication())
+                start()
             }.onCompletion {
-                message(getApplication(), "onCompletion(${it?.message ?: ""})")
+                message("onCompletion(${it?.message ?: ""})")
             }.collect { result ->
-                emit(getApplication(), result)
+                emit(result)
             }
         }
     }
@@ -314,11 +312,11 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             }
             .flowOn(Dispatchers.IO)
             .onStart {
-                start(getApplication())
+                start()
             }.onCompletion {
-                message(getApplication(), "onCompletion(${it?.message ?: ""})")
+                message("onCompletion(${it?.message ?: ""})")
             }.collect { result ->
-                emit(getApplication(), result)
+                emit(result)
             }
         }
     }
@@ -353,11 +351,11 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             }
             .flowOn(Dispatchers.IO)
             .onStart {
-                start(getApplication())
+                start()
             }.onCompletion {
-                message(getApplication(), "onCompletion(${it?.message ?: ""})")
+                message("onCompletion(${it?.message ?: ""})")
             }.collect { result ->
-                emit(getApplication(), result)
+                emit(result)
             }
         }
     }
@@ -371,13 +369,13 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             }
             .flowOn(Dispatchers.IO)
             .onStart {
-                start(getApplication())
+                start()
             }.onCompletion {
-                message(getApplication(), "onCompletion(${it?.message ?: ""})")
+                message("onCompletion(${it?.message ?: ""})")
             }
             .distinctUntilChanged()
             .collect { result ->
-                emit(getApplication(), result)
+                emit(result)
             }
         }
     }
@@ -394,12 +392,12 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             .debounce(1000)
             .flowOn(Dispatchers.IO)
             .onStart {
-                start(getApplication())
+                start()
             }.onCompletion {
-                message(getApplication(), "onCompletion(${it?.message ?: ""})")
+                message("onCompletion(${it?.message ?: ""})")
             }
             .collect { result ->
-                emit(getApplication(), result)
+                emit(result)
             }
         }
     }
@@ -407,31 +405,42 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
     override fun eventBus() {
         viewModelScope.coroutineContext.cancelChildren()
 
-        val bus = ConflatedBroadcastChannel<Int>()
+//        val bus = when(Random.nextInt(4)) {
+//            0 -> Channel<Int>(Channel.UNLIMITED)
+//            1 -> Channel<Int>(Channel.CONFLATED)
+//            2 -> Channel<Int>(Channel.RENDEZVOUS)
+//            else -> Channel<Int>(Channel.BUFFERED)
+//        }
+
+        val bus = when(Random.nextInt(2)) {
+            0 -> BroadcastChannel<Int>(Channel.CONFLATED)
+            else -> BroadcastChannel<Int>(Channel.BUFFERED)
+        }
 
         viewModelScope.launch {
             delay(1000)
-            bus.openSubscription().consumeEach {
-                emit(getApplication(), "one - $it")
+            bus.consumeEach {
+                emit("one - $it")
             }
         }
 
         viewModelScope.launch {
             delay(2000)
-            bus.openSubscription().consumeEach {
-                emit(getApplication(), "two - $it")
+            bus.asFlow().collect {
+                emit("two - $it")
             }
         }
 
         viewModelScope.launch {
-            start(getApplication())
+            start()
+            message( "Channel is: ${bus.javaClass.simpleName}")
             (1..10).forEach {
                 bus.offer(it)
                 delay(500)
             }
         }.invokeOnCompletion {
             bus.cancel()
-            message(getApplication(), "onCompletion(${it?.message ?: ""})")
+            message("onCompletion(${it?.message ?: ""})")
         }
     }
 
@@ -439,14 +448,14 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
         viewModelScope.coroutineContext.cancelChildren()
         viewModelScope.launch {
 
-            start(getApplication())
+            start()
 
             withContext(Dispatchers.IO) { longActionResult() }
-            emit(getApplication(), "Complete done", R.color.colorOne)
+            emit("Complete done", R.color.colorOne)
 
             val single = withContext(Dispatchers.IO) { longActionResult() }
-            emit(getApplication(), "Single: ${single.toString()}", R.color.colorTwo)
-            emit(getApplication(), "Single done")
+            emit("Single: ${single.toString()}", R.color.colorTwo)
+            emit("Single done")
 
             callbackFlow {
                 val thread = threadActionEmit(delay = 4000, 5U, { index, value ->
@@ -458,8 +467,8 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
                 awaitClose { thread.interrupt() }
             }
             .flowOn(Dispatchers.IO)
-            .onCompletion { emit(getApplication(), "Observable done") }
-            .onEach { emit(getApplication(), "Observable: $it", R.color.colorThree) }
+            .onCompletion { emit("Observable done") }
+            .onEach { emit("Observable: $it", R.color.colorThree) }
             .flowOn(Dispatchers.Main)
             .flatMapLatest { pair ->
                 callbackFlow {
@@ -473,10 +482,10 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
                 }
             }
             .flowOn(Dispatchers.IO)
-            .collect { emit(getApplication(), it, R.color.colorFour) }
+            .collect { emit(it, R.color.colorFour) }
         }.apply {
             invokeOnCompletion {
-                message(getApplication(), "invokeOnCompletion(${it?.message ?: ""})")
+                message("invokeOnCompletion(${it?.message ?: ""})")
             }
         }
     }

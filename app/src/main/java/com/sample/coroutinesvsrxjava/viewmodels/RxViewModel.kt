@@ -8,8 +8,12 @@ import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.*
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.schedulers.Schedulers
+import io.reactivex.rxjava3.subjects.AsyncSubject
+import io.reactivex.rxjava3.subjects.BehaviorSubject
 import io.reactivex.rxjava3.subjects.PublishSubject
+import io.reactivex.rxjava3.subjects.ReplaySubject
 import java.util.concurrent.TimeUnit
+import kotlin.random.Random
 
 @ExperimentalUnsignedTypes
 class RxViewModel(application: Application) : BaseViewModel(application), Actions {
@@ -34,11 +38,11 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .doOnSubscribe {
-                    start(getApplication())
+                    start()
                 }.doFinally {
-                    message(getApplication(), "doFinally()")
+                    message("doFinally()")
                 }.subscribe {
-                    result(getApplication(), "Complete")
+                    result("Complete")
                 }
         )
     }
@@ -50,11 +54,11 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .doOnSubscribe {
-                    start(getApplication())
+                    start()
                 }.doFinally {
-                    message(getApplication(), "doFinally()")
+                    message("doFinally()")
                 }.subscribe { result ->
-                    result(getApplication(), result)
+                    result(result)
                 }
         )
     }
@@ -76,11 +80,11 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .doOnSubscribe {
-                start(getApplication())
+                start()
             }.doFinally {
-                message(getApplication(), "doFinally()")
+                message("doFinally()")
             }.subscribe { result ->
-                emit(getApplication(), result)
+                emit(result)
             }
         )
     }
@@ -98,14 +102,14 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread(), false, 1)
             .doOnSubscribe {
-                start(getApplication())
-                message(getApplication(), "total items: $items")
+                start()
+                message("total items: $items")
             }.doFinally {
-                message(getApplication(), "processed items: $processedItems")
-                message(getApplication(), "doFinally()")
+                message("processed items: $processedItems")
+                message("doFinally()")
             }.subscribe { result ->
                 ++processedItems
-                emit(getApplication(), result)
+                emit(result)
             }
         )
     }
@@ -125,11 +129,11 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .doOnSubscribe {
-                start(getApplication())
+                start()
             }.doFinally {
-                message(getApplication(), "doFinally()")
+                message("doFinally()")
             }.subscribe { result ->
-                result(getApplication(), result)
+                result(result)
             }
         )
     }
@@ -150,13 +154,13 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .doOnSubscribe {
-                start(getApplication())
+                start()
             }.doFinally {
-                message(getApplication(), "doFinally()")
+                message("doFinally()")
             }.subscribe({ result ->
-                result(getApplication(), result)
+                result(result)
             }, {
-                message(getApplication(), "subscribe(${it.message})")
+                message("subscribe(${it.message})")
             })
         )
     }
@@ -188,11 +192,11 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .doOnSubscribe {
-                start(getApplication())
+                start()
             }.doFinally {
-                message(getApplication(), "doFinally()")
+                message("doFinally()")
             }.subscribe { result ->
-                emit(getApplication(), result)
+                emit(result)
             }
         )
     }
@@ -224,11 +228,11 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .doOnSubscribe {
-                start(getApplication())
+                start()
             }.doFinally {
-                message(getApplication(), "doFinally()")
+                message("doFinally()")
             }.subscribe { result ->
-                emit(getApplication(), result)
+                emit(result)
             }
         )
     }
@@ -263,11 +267,11 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .doOnSubscribe {
-                start(getApplication())
+                start()
             }.doFinally {
-                message(getApplication(), "doFinally()")
+                message("doFinally()")
             }.subscribe { result ->
-                emit(getApplication(), result)
+                emit(result)
             }
         )
     }
@@ -302,11 +306,11 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .doOnSubscribe {
-                start(getApplication())
+                start()
             }.doFinally {
-                message(getApplication(), "doFinally()")
+                message("doFinally()")
             }.subscribe { result ->
-                emit(getApplication(), result)
+                emit(result)
             }
         )
     }
@@ -341,11 +345,11 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .doOnSubscribe {
-                start(getApplication())
+                start()
             }.doFinally {
-                message(getApplication(), "doFinally()")
+                message("doFinally()")
             }.subscribe { result ->
-                emit(getApplication(), result)
+                emit(result)
             }
         )
     }
@@ -359,11 +363,11 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
                 .observeOn(AndroidSchedulers.mainThread())
                 .distinctUntilChanged()
                 .doOnSubscribe {
-                    start(getApplication())
+                    start()
                 }.doFinally {
-                    message(getApplication(), "doFinally()")
+                    message("doFinally()")
                 }.subscribe { result ->
-                    emit(getApplication(), result)
+                    emit(result)
                 }
         )
     }
@@ -384,11 +388,11 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .doOnSubscribe {
-                    start(getApplication())
+                    start()
                 }.doFinally {
-                    message(getApplication(), "doFinally()")
+                    message("doFinally()")
                 }.subscribe { result ->
-                    emit(getApplication(), result)
+                    emit(result)
                 }
         )
     }
@@ -396,21 +400,34 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
     override fun eventBus() {
         compositeDisposable.clear()
 
-        val bus = PublishSubject.create<Int>().apply {
-            observeOn(AndroidSchedulers.mainThread())
+        val bus = when (Random.nextInt(4)) {
+            0 -> BehaviorSubject.create<Int>().apply {
+                observeOn(AndroidSchedulers.mainThread())
+            }
+            1 -> ReplaySubject.create<Int>().apply {
+                observeOn(AndroidSchedulers.mainThread())
+            }
+            2 -> AsyncSubject.create<Int>().apply {
+                observeOn(AndroidSchedulers.mainThread())
+            }
+            else -> PublishSubject.create<Int>().apply {
+                observeOn(AndroidSchedulers.mainThread())
+            }
         }
-
+        
         compositeDisposable.add(
-            bus.delaySubscription(500, TimeUnit.MILLISECONDS)
+            bus.delaySubscription(1000, TimeUnit.MILLISECONDS)
+                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
-                    emit(getApplication(), "one - $it")
+                    emit("one - $it")
                 }
         )
 
         compositeDisposable.add(
-            bus.delaySubscription(1500, TimeUnit.MILLISECONDS)
+            bus.delaySubscription(2000, TimeUnit.MILLISECONDS)
+                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
-                    emit(getApplication(), "two - $it")
+                    emit("two - $it")
                 }
         )
 
@@ -419,10 +436,11 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .doOnSubscribe {
-                    start(getApplication())
+                    start()
+                    message( "Subject is: ${bus.javaClass.simpleName}")
                 }.doFinally {
                     bus.onComplete()
-                    message(getApplication(), "doFinally()")
+                    message("doFinally()")
                 }.subscribe {
                     bus.onNext(it.toInt())
                 }
@@ -434,12 +452,12 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
 
         val completable = Completable.fromAction(::longActionResult)
             .observeOn(AndroidSchedulers.mainThread())
-            .doFinally { emit(getApplication(), "Complete done", R.color.colorOne) }
+            .doFinally { emit("Complete done", R.color.colorOne) }
 
         val single = Single.fromCallable(::longActionResult)
             .observeOn(AndroidSchedulers.mainThread())
-            .doAfterSuccess { emit(getApplication(), "Single: ${it.toString()}", R.color.colorTwo) }
-            .doFinally { emit(getApplication(), "Single done") }
+            .doAfterSuccess { emit("Single: ${it.toString()}", R.color.colorTwo) }
+            .doFinally { emit("Single done") }
 
         val observable = Observable.create<Pair<UInt, UInt>> { emiter ->
             val thread = threadActionEmit(delay = 4000, count = 5U, { index, value ->
@@ -450,8 +468,8 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
 
             emiter.setCancellable { thread.interrupt() }
         }.observeOn(AndroidSchedulers.mainThread())
-            .doAfterNext { emit(getApplication(), "Observable: $it", R.color.colorThree) }
-            .doFinally { emit(getApplication(), "Observable done") }
+            .doAfterNext { emit("Observable: $it", R.color.colorThree) }
+            .doFinally { emit("Observable done") }
 
         val flowable = Flowable.create<Pair<UInt, UInt>> ({ emiter ->
             val thread = threadActionEmit(delay = 2000, count = 5U, { index, value ->
@@ -479,8 +497,8 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             }
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
-            .doOnSubscribe { start(getApplication()) }
-            .doFinally { message(getApplication(), "doFinally()") }
-            .subscribe { emit(getApplication(), it, R.color.colorFour) }
+            .doOnSubscribe { start() }
+            .doFinally { message("doFinally()") }
+            .subscribe { emit(it, R.color.colorFour) }
     }
 }

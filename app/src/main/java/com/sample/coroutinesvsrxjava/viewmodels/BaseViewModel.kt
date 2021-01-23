@@ -1,7 +1,6 @@
 package com.sample.coroutinesvsrxjava.viewmodels
 
 import android.app.Application
-import android.content.Context
 import android.text.Spanned
 import android.util.Log
 import androidx.annotation.ColorRes
@@ -16,7 +15,7 @@ import kotlin.random.Random
 import kotlin.random.nextUInt
 
 
-abstract class BaseViewModel(application: Application) : AndroidViewModel(application) {
+abstract class BaseViewModel(private val app: Application) : AndroidViewModel(app) {
 
     companion object {
         val TAG = BaseViewModel::class.java.simpleName
@@ -67,34 +66,34 @@ abstract class BaseViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
-    protected fun <T> message(context: Context, value: T) {
-        val message = (getTime() + ": ").toSpanned(context, R.color.colorText) +
-                value.toString().toSpanned(context, R.color.colorResult)
+    protected fun <T> message(value: T) {
+        val message = (getTime() + ": ").toSpanned(app, R.color.colorText) +
+                value.toString().toSpanned(app, R.color.colorResult)
 
         Log.d(TAG, message.toString())
         result.value = message
     }
 
-    protected fun start(context: Context) {
-        val message = (getTime() + ": ").toSpanned(context, R.color.colorText) +
-                context.getString(R.string.action_start).toSpanned(context, R.color.colorStart)
+    protected fun start() {
+        val message = (getTime() + ": ").toSpanned(app, R.color.colorText) +
+                app.getString(R.string.action_start).toSpanned(app, R.color.colorStart)
 
         Log.d(TAG, message.toString())
         result.value = null
         result.value = message
     }
 
-    protected fun <T> emit(context: Context, value: T, @ColorRes colorId: Int = R.color.colorProgress) {
-        val message = (getTime() + ": ").toSpanned(context, R.color.colorText) +
-                context.getString(R.string.action_emit, value.toString()).toSpanned(context, colorId)
+    protected fun <T> emit(value: T, @ColorRes colorId: Int = R.color.colorProgress) {
+        val message = (getTime() + ": ").toSpanned(app, R.color.colorText) +
+                app.getString(R.string.action_emit, value.toString()).toSpanned(app, colorId)
 
         Log.d(TAG, message.toString())
         result.value = message
     }
 
-    protected fun <T> result(context: Context, value: T) {
-        val message = (getTime() + ": ").toSpanned(context, R.color.colorText) +
-                context.getString(R.string.action_result, value.toString()).toSpanned(context, R.color.colorResult)
+    protected fun <T> result(value: T) {
+        val message = (getTime() + ": ").toSpanned(app, R.color.colorText) +
+                app.getString(R.string.action_result, value.toString()).toSpanned(app, R.color.colorResult)
 
         Log.d(TAG, message.toString())
         result.value = message
