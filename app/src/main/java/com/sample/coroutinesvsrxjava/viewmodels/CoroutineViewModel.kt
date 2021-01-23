@@ -419,7 +419,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
 
         viewModelScope.launch {
             delay(1000)
-            bus.consumeEach {
+            bus.openSubscription().consumeEach {
                 emit("one - $it")
             }
         }
