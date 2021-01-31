@@ -15,6 +15,7 @@ import kotlin.random.Random
 import kotlin.random.nextUInt
 
 
+@ExperimentalUnsignedTypes
 abstract class BaseViewModel(private val app: Application) : AndroidViewModel(app) {
 
     companion object {

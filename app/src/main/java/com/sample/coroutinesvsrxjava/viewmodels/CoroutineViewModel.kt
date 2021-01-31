@@ -163,7 +163,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
 
     override fun combineLatest() {
         val flowOne = callbackFlow {
-            val thread = threadActionEmit(5000, 5U, { index, value ->
+            val thread = threadActionEmit(7000, 7U, { index, value ->
                 sendBlocking((index + 1U).toString())
             }, {
                 close()
@@ -179,7 +179,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
                 delay(500)
             }
 
-        val flowThree = flowOf("1", "2", "3", "4", "5")
+        val flowThree = flowOf("1", "2", "3", "4", "5", "6")
             .onEach {
                 delay(250)
             }
@@ -204,7 +204,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
 
     override fun zip() {
         val flowOne = callbackFlow {
-            val thread = threadActionEmit(5000, 5U, { index, value ->
+            val thread = threadActionEmit(7000, 7U, { index, value ->
                 sendBlocking((index + 1U).toString())
             }, {
                 close()
@@ -220,7 +220,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
                 delay(500)
             }
 
-        val flowThree = flowOf("1", "2", "3", "4", "5")
+        val flowThree = flowOf("1", "2", "3", "4", "5", "6")
             .onEach {
                 delay(250)
             }

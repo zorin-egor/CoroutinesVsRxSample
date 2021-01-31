@@ -1,6 +1,7 @@
 package com.sample.coroutinesvsrxjava.viewmodels
 
 
+@ExperimentalUnsignedTypes
 interface Actions {
 
     fun completable()

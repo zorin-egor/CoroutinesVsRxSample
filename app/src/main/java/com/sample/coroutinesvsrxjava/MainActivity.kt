@@ -37,9 +37,9 @@ class MainActivity : AppCompatActivity() {
         private val TAG = MainActivity::class.java.simpleName
     }
 
-    private val mRxViewModel: RxViewModel by viewModels()
+    private val rxViewModel: RxViewModel by viewModels()
 
-    private val mCoroutineViewModel: CoroutineViewModel by viewModels()
+    private val coroutineViewModel: CoroutineViewModel by viewModels()
 
     private val rxLog: TextView
         get() = textLayout.rxActionText
@@ -68,49 +68,49 @@ class MainActivity : AppCompatActivity() {
     private val onClickListener = View.OnClickListener {
         when ((it.parent as? ViewGroup)?.tag) {
             getString(R.string.action_type_completable) -> {
-                setButtonsAction(it.id, mRxViewModel::completable, mCoroutineViewModel::completable)
+                setButtonsAction(it.id, rxViewModel::completable, coroutineViewModel::completable)
             }
             getString(R.string.action_type_single) -> {
-                setButtonsAction(it.id, mRxViewModel::single, mCoroutineViewModel::single)
+                setButtonsAction(it.id, rxViewModel::single, coroutineViewModel::single)
             }
             getString(R.string.action_type_observer) -> {
-                setButtonsAction(it.id, mRxViewModel::observable, mCoroutineViewModel::observable)
+                setButtonsAction(it.id, rxViewModel::observable, coroutineViewModel::observable)
             }
             getString(R.string.action_type_flow) -> {
-                setButtonsAction(it.id, mRxViewModel::flow, mCoroutineViewModel::flow)
+                setButtonsAction(it.id, rxViewModel::flow, coroutineViewModel::flow)
             }
             getString(R.string.action_type_callback) -> {
-                setButtonsAction(it.id, mRxViewModel::callback, mCoroutineViewModel::callback)
+                setButtonsAction(it.id, rxViewModel::callback, coroutineViewModel::callback)
             }
             getString(R.string.action_type_timeout) -> {
-                setButtonsAction(it.id, mRxViewModel::timeout, mCoroutineViewModel::timeout)
+                setButtonsAction(it.id, rxViewModel::timeout, coroutineViewModel::timeout)
             }
             getString(R.string.action_type_combine_latest) -> {
-                setButtonsAction(it.id, mRxViewModel::combineLatest, mCoroutineViewModel::combineLatest)
+                setButtonsAction(it.id, rxViewModel::combineLatest, coroutineViewModel::combineLatest)
             }
             getString(R.string.action_type_zip) -> {
-                setButtonsAction(it.id, mRxViewModel::zip, mCoroutineViewModel::zip)
+                setButtonsAction(it.id, rxViewModel::zip, coroutineViewModel::zip)
             }
             getString(R.string.action_type_flat_map) -> {
-                setButtonsAction(it.id, mRxViewModel::flatMap, mCoroutineViewModel::flatMap)
+                setButtonsAction(it.id, rxViewModel::flatMap, coroutineViewModel::flatMap)
             }
             getString(R.string.action_type_switch_map) -> {
-                setButtonsAction(it.id, mRxViewModel::switchMap, mCoroutineViewModel::switchMap)
+                setButtonsAction(it.id, rxViewModel::switchMap, coroutineViewModel::switchMap)
             }
             getString(R.string.action_type_concat_map) -> {
-                setButtonsAction(it.id, mRxViewModel::concatMap, mCoroutineViewModel::concatMap)
+                setButtonsAction(it.id, rxViewModel::concatMap, coroutineViewModel::concatMap)
             }
             getString(R.string.action_type_distinct_until_changed) -> {
-                setButtonsAction(it.id, mRxViewModel::distinctUntilChanged, mCoroutineViewModel::distinctUntilChanged)
+                setButtonsAction(it.id, rxViewModel::distinctUntilChanged, coroutineViewModel::distinctUntilChanged)
             }
             getString(R.string.action_type_distinct_debounce) -> {
-                setButtonsAction(it.id, mRxViewModel::debounce, mCoroutineViewModel::debounce)
+                setButtonsAction(it.id, rxViewModel::debounce, coroutineViewModel::debounce)
             }
             getString(R.string.action_type_event_bus) -> {
-                setButtonsAction(it.id, mRxViewModel::eventBus, mCoroutineViewModel::eventBus)
+                setButtonsAction(it.id, rxViewModel::eventBus, coroutineViewModel::eventBus)
             }
             getString(R.string.action_type_chains) -> {
-                setButtonsAction(it.id, mRxViewModel::chains, mCoroutineViewModel::chains)
+                setButtonsAction(it.id, rxViewModel::chains, coroutineViewModel::chains)
             }
         }
     }
@@ -130,7 +130,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -146,14 +145,12 @@ class MainActivity : AppCompatActivity() {
                     return true
                 }
             }
-
             MotionEvent.ACTION_MOVE -> {
                 if (isGuidelineTouch) {
                     setGuidLineBias(event.rawX)
                     return true
                 }
             }
-
             MotionEvent.ACTION_UP -> {
                 if (isGuidelineTouch) {
                     setGuidLineBias(event.rawX, true)
@@ -162,7 +159,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-
         return super.dispatchTouchEvent(event)
     }
 
@@ -179,7 +175,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setData() {
-        mCoroutineViewModel.result.observe(this) {
+        coroutineViewModel.result.observe(this) {
             when (it) {
                 null -> setCoroutineInitialText()
                 else -> coroutineLog.append(it) {
@@ -188,7 +184,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        mRxViewModel.result.observe(this) {
+        rxViewModel.result.observe(this) {
             when (it) {
                 null -> setRxInitialText()
                 else -> rxLog.append(it) {
@@ -211,8 +207,6 @@ class MainActivity : AppCompatActivity() {
             setTextIsSelectable(true)
         }
     }
-
-
 
     private fun setBackground(isChecked: Boolean) {
         val colorStart = ContextCompat.getColor(this, if (isChecked) android.R.color.transparent else R.color.colorAccent)

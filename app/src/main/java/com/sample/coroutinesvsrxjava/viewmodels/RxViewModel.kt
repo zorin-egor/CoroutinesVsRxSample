@@ -167,7 +167,7 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
 
     override fun combineLatest() {
         val observableOne = Observable.create<String> { emitter ->
-            val thread = threadActionEmit(5000, 5U, { index, value ->
+            val thread = threadActionEmit(7000, 7U, { index, value ->
                 emitter.onNext((index + 1U).toString())
             }, {
                 emitter.onComplete()
@@ -181,7 +181,7 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
         val observableTwo = Observable.just("1", "2", "3", "4", "5")
             .zipWith(Observable.interval(500, TimeUnit.MILLISECONDS), { item, interval -> item })
 
-        val observableThree = Observable.just("1", "2", "3", "4", "5")
+        val observableThree = Observable.just("1", "2", "3", "4", "5", "6")
             .zipWith(Observable.interval(250, TimeUnit.MILLISECONDS), { item, interval -> item })
 
         compositeDisposable.clear()
@@ -203,7 +203,7 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
 
     override fun zip() {
         val observableOne = Observable.create<String> { emitter ->
-            val thread = threadActionEmit(5000, 5U, { index, value ->
+            val thread = threadActionEmit(7000, 7U, { index, value ->
                 emitter.onNext((index + 1U).toString())
             }, {
                 emitter.onComplete()
@@ -217,7 +217,7 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
         val observableTwo = Observable.just("1", "2", "3", "4", "5")
             .zipWith(Observable.interval(500, TimeUnit.MILLISECONDS)){ item, interval -> item }
 
-        val observableThree = Observable.just("1", "2", "3", "4", "5")
+        val observableThree = Observable.just("1", "2", "3", "4", "5", "6")
             .zipWith(Observable.interval(250, TimeUnit.MILLISECONDS)) { item, interval -> item }
 
         compositeDisposable.clear()

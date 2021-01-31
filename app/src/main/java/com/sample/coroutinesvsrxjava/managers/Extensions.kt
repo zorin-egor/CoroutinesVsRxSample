@@ -35,7 +35,7 @@ fun String.toSpanned(@ColorInt color: Int, style: Int = Typeface.NORMAL): Spanne
 }
 
 fun getTime(format: String = "HH:mm:ss.SSS"): String {
-    return SimpleDateFormat(format).format(Date())
+    return SimpleDateFormat(format, Locale.getDefault()).format(Date())
 }
 
 operator fun Spanned.plus(value: Spanned): Spanned {
