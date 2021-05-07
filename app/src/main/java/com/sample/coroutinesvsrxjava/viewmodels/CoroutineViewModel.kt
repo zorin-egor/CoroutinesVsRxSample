@@ -16,10 +16,6 @@ import kotlin.random.Random
 @ExperimentalUnsignedTypes
 class CoroutineViewModel(application: Application) : BaseViewModel(application), Actions {
 
-    companion object {
-        val TAG = CoroutineViewModel::class.java.simpleName
-    }
-
     override val result = MutableLiveData<Spanned?>()
 
     private suspend fun suspendLongAction(): UInt {
@@ -413,7 +409,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
 //        }
 
         val bus = when(Random.nextInt(2)) {
-            0 -> BroadcastChannel<Int>(Channel.CONFLATED)
+            0 -> BroadcastChannel(Channel.CONFLATED)
             else -> BroadcastChannel<Int>(Channel.BUFFERED)
         }
 

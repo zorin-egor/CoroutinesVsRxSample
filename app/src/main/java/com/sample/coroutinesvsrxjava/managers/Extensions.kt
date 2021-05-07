@@ -18,7 +18,6 @@ import android.widget.TextView
 import androidx.annotation.ColorInt
 import androidx.annotation.ColorRes
 import androidx.core.content.ContextCompat
-import kotlinx.android.synthetic.main.view_pair_text.view.*
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -56,7 +55,7 @@ fun ScrollView.scrollBottom() {
 
 fun View.getVisibleRect(leftOffset: Int, rightOffset: Int): Rect {
     return Rect().apply {
-        guideLine.getGlobalVisibleRect(this)
+        getGlobalVisibleRect(this)
         left -= leftOffset.toDp(resources).toInt()
         right += rightOffset.toDp(resources).toInt()
     }

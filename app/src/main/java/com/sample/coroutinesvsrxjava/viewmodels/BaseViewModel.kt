@@ -19,7 +19,7 @@ import kotlin.random.nextUInt
 abstract class BaseViewModel(private val app: Application) : AndroidViewModel(app) {
 
     companion object {
-        val TAG = BaseViewModel::class.java.simpleName
+        private val TAG = BaseViewModel::class.java.simpleName
     }
 
     abstract val result: MutableLiveData<Spanned?>

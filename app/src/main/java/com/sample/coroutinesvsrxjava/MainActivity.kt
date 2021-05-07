@@ -21,10 +21,6 @@ import androidx.core.view.updateMargins
 import com.sample.coroutinesvsrxjava.managers.*
 import com.sample.coroutinesvsrxjava.viewmodels.CoroutineViewModel
 import com.sample.coroutinesvsrxjava.viewmodels.RxViewModel
-import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.activity_main.view.*
-import kotlinx.android.synthetic.main.view_pair_text.*
-import kotlinx.android.synthetic.main.view_pair_text.view.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 
@@ -33,28 +29,33 @@ import kotlinx.coroutines.FlowPreview
 @ExperimentalUnsignedTypes
 class MainActivity : AppCompatActivity() {
 
-    companion object {
-        private val TAG = MainActivity::class.java.simpleName
-    }
-
     private val rxViewModel: RxViewModel by viewModels()
 
     private val coroutineViewModel: CoroutineViewModel by viewModels()
 
     private val rxLog: TextView
-        get() = textLayout.rxActionText
+        get() = findViewById(R.id.rxActionText)
 
     private val rxScroll: ScrollView
-        get() = textLayout.rxActionScroll
+        get() = findViewById(R.id.rxActionScroll)
 
     private val coroutineLog: TextView
-        get() = textLayout.coroutineActionText
+        get() = findViewById(R.id.coroutineActionText)
 
     private val coroutineScroll: ScrollView
-        get() = textLayout.coroutineActionScroll
+        get() = findViewById(R.id.coroutineActionScroll)
 
     private val isSimultaneousCheckBox: CheckBox
-        get() = buttonsScroll.isSimultaneousAction
+        get() = findViewById(R.id.isSimultaneousAction)
+
+    private val guideLine: View
+        get() = findViewById(R.id.guideLine)
+
+    private val buttonsContainer: LinearLayout
+        get() = findViewById(R.id.buttonsContainer)
+
+    private val textLayout: ConstraintLayout
+        get() = findViewById(R.id.textLayout)
 
     private val isSimultaneousAction: Boolean
         get() = isSimultaneousCheckBox.isChecked

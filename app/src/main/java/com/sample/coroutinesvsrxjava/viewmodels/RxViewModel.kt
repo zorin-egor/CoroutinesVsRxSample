@@ -18,10 +18,6 @@ import kotlin.random.Random
 @ExperimentalUnsignedTypes
 class RxViewModel(application: Application) : BaseViewModel(application), Actions {
 
-    companion object {
-        val TAG = RxViewModel::class.java.simpleName
-    }
-
     private val compositeDisposable = CompositeDisposable()
 
     override val result = MutableLiveData<Spanned?>()
