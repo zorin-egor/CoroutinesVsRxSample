@@ -519,9 +519,10 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             .doAfterSuccess { emit("Single: ${it.toString()}", R.color.colorTwo) }
             .doFinally { emit("Single done") }
 
-        val observable = Observable.create<Pair<UInt, UInt>> { emiter ->
+        val observable = Observable.create<Triple<UInt, UInt, String>> { emiter ->
+            val threadName = Thread.currentThread().name
             val thread = threadActionEmit(delay = 4000, count = 5U, emitter = { index, value ->
-                emiter.onNext(index to value)
+                emiter.onNext(Triple(index, value, "${Thread.currentThread().name}, $threadName"))
             }, complete = {
                 emiter.onComplete()
             }, error = {
@@ -530,12 +531,13 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
 
             emiter.setCancellable { thread.interrupt() }
         }.observeOn(AndroidSchedulers.mainThread())
-            .doAfterNext { emit("Observable: $it", R.color.colorThree) }
-            .doFinally { emit("Observable done") }
+            .doOnNext { emit("Observable: $it", R.color.colorThree) }
+            .doFinally { emit("Observable done") } // Wrong thread with switchMap http://reactivex.io/RxJava/2.x/javadoc/io/reactivex/Observable.html#doFinally-io.reactivex.functions.Action-
 
-        val flowable = Flowable.create<Pair<UInt, UInt>> ({ emiter ->
+        val flowable = Flowable.create<Triple<UInt, UInt, String>> ({ emiter ->
+            val threadName = Thread.currentThread().name
             val thread = threadActionEmit(delay = 2000, count = 5U, emitter = { index, value ->
-                emiter.onNext(index to value)
+                emiter.onNext(Triple(index, value, "${Thread.currentThread().name}, $threadName"))
             }, complete = {
                 emiter.onComplete()
             }, error = {
@@ -544,6 +546,9 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
 
             emiter.setCancellable { thread.interrupt() }
         }, BackpressureStrategy.BUFFER)
+            .observeOn(AndroidSchedulers.mainThread())
+            .doOnNext { emit("Flowable: $it", R.color.colorFour) }
+            .doFinally { emit("Flowable done") } // Wrong thread with switchMap http://reactivex.io/RxJava/2.x/javadoc/io/reactivex/Observable.html#doFinally-io.reactivex.functions.Action-
 
         compositeDisposable.add(completable
             .observeOn(Schedulers.io())
@@ -552,18 +557,14 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             .flatMapObservable { observable }
             .toFlowable(BackpressureStrategy.BUFFER)
             .observeOn(Schedulers.io())
-            .switchMap { observableResult ->
-                flowable
-                    .map {
-                        "${observableResult.first} - $it - ${Thread.currentThread().name}"
-                    }
-            }
+//            .switchMap { flowable } // Changed thread for doFinally despite observeOn
+            .flatMap { flowable }
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .doOnSubscribe { start() }
             .doFinally { message("doFinally()") }
             .subscribe({
-                emit(it, R.color.colorFour)
+                // Stub
             }, {
                 error(it.message)
             })

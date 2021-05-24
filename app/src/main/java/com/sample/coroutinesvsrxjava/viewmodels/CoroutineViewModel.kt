@@ -516,8 +516,9 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             emit("Single done")
 
             callbackFlow {
+                val threadName = Thread.currentThread().name
                 val thread = threadActionEmit(delay = 4000, count = 5U, emitter = { index, value ->
-                    sendBlocking(index to value)
+                    sendBlocking(Triple(index, value, "${Thread.currentThread().name}, $threadName"))
                 }, complete = {
                     close()
                 }, error = {
@@ -530,10 +531,11 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             .onCompletion { emit("Observable done") }
             .onEach { emit("Observable: $it", R.color.colorThree) }
             .flowOn(Dispatchers.Main)
-            .flatMapLatest { pair ->
+            .flatMapMerge { pair ->
                 callbackFlow {
+                    val threadName = Thread.currentThread().name
                     val thread = threadActionEmit(delay = 2000, count = 5U, emitter = { index, value ->
-                        sendBlocking("${pair.first} - ${index to value}) - ${Thread.currentThread().name}")
+                        sendBlocking(Triple(index, value, "${Thread.currentThread().name}, $threadName"))
                     }, complete = {
                         close()
                     }, error = {
@@ -542,10 +544,13 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
 
                     awaitClose { thread.interrupt() }
                 }
+                .flowOn(Dispatchers.IO)
+                .onEach { emit("Flowable: $it", R.color.colorFour) }
+                .onCompletion { emit("Flowable done") }
+                .flowOn(Dispatchers.Main)
             }
-            .flowOn(Dispatchers.IO)
             .catch { error(it.message) }
-            .collect { emit(it, R.color.colorFour) }
+            .collect()
         }.apply {
             invokeOnCompletion {
                 message("invokeOnCompletion(${it?.message ?: ""})")
