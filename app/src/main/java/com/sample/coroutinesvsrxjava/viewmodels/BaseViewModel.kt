@@ -27,17 +27,26 @@ abstract class BaseViewModel(private val app: Application) : AndroidViewModel(ap
     protected fun longActionResult(delay: Long = 1000): UInt {
         return try {
             Thread.sleep(delay)
-            Random.nextUInt() % 99U + 1U
+            (Random.nextUInt() % 99U + 1U).also(::errorGenerator)
         } catch (e: InterruptedException) {
             0U
         }
     }
 
-    protected fun longActionEmit(delay: Long = 3000, count: UInt = 10U, emitter: (UInt, UInt) -> Unit) {
+    protected fun longActionEmit(
+        delay: Long = 3000,
+        count: UInt = 10U,
+        isError: Boolean = true,
+        emitter: (UInt, UInt) -> Unit
+    ) {
         try {
             val delayTime = delay / count.toLong()
             (0U until count).forEach {
-                emitter(it, Random.nextUInt() % 99U + 1U)
+                emitter(it, (Random.nextUInt() % 99U + 1U).also {
+                    if (isError) {
+                        errorGenerator(it)
+                    }
+                })
                 if (delayTime > 0) {
                     Thread.sleep(delayTime)
                 }
@@ -47,9 +56,13 @@ abstract class BaseViewModel(private val app: Application) : AndroidViewModel(ap
         }
     }
 
-    protected fun threadActionResult(delay: Long = 1000, emitter: (UInt) -> Unit): Thread {
+    protected fun threadActionResult(delay: Long = 1000, emitter: (UInt) -> Unit, error: (Exception) -> Unit): Thread {
         return thread {
-            emitter(longActionResult(delay))
+            try {
+                emitter(longActionResult(delay))
+            } catch (e: Exception) {
+                error(e)
+            }
         }
     }
 
@@ -57,13 +70,18 @@ abstract class BaseViewModel(private val app: Application) : AndroidViewModel(ap
         delay: Long = 3000,
         count: UInt = 10U,
         emitter: (UInt, UInt) -> Unit,
-        complete: () -> Unit
+        complete: () -> Unit,
+        error: (Exception) -> Unit
     ): Thread {
         return thread {
-            longActionEmit(delay, count) { index, value ->
-                emitter(index, value)
+            try {
+                longActionEmit(delay, count, true) { index, value ->
+                    emitter(index, value)
+                }
+                complete()
+            } catch (e: Exception) {
+                error(e)
             }
-            complete()
         }
     }
 
@@ -98,6 +116,20 @@ abstract class BaseViewModel(private val app: Application) : AndroidViewModel(ap
 
         Log.d(TAG, message.toString())
         result.value = message
+    }
+
+    protected fun <T> error(value: T? = null) {
+        val message = (getTime() + ": ").toSpanned(app, R.color.colorText) +
+                app.getString(R.string.action_error, (value ?: "-").toString()).toSpanned(app, R.color.colorError)
+
+        Log.e(TAG, message.toString())
+        result.value = message
+    }
+
+    private fun errorGenerator(value: UInt, mod: UInt = 15U) {
+        if (value % mod == 0U) {
+            throw IllegalArgumentException("Some unexpected error :)")
+        }
     }
 
 }

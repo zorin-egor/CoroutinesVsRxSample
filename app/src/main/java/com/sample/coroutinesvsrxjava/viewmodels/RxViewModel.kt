@@ -8,10 +8,7 @@ import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.*
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.schedulers.Schedulers
-import io.reactivex.rxjava3.subjects.AsyncSubject
-import io.reactivex.rxjava3.subjects.BehaviorSubject
-import io.reactivex.rxjava3.subjects.PublishSubject
-import io.reactivex.rxjava3.subjects.ReplaySubject
+import io.reactivex.rxjava3.subjects.*
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
@@ -37,9 +34,11 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
                     start()
                 }.doFinally {
                     message("doFinally()")
-                }.subscribe {
+                }.subscribe({
                     result("Complete")
-                }
+                }, {
+                    error(it.message)
+                })
         )
     }
 
@@ -53,9 +52,11 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
                     start()
                 }.doFinally {
                     message("doFinally()")
-                }.subscribe { result ->
+                }.subscribe({ result ->
                     result(result)
-                }
+                }, {
+                    error(it.message)
+                })
         )
     }
 
@@ -67,6 +68,8 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
                     emitter.onNext(index to value)
                 }, complete = {
                     emitter.onComplete()
+                }, error = {
+                    emitter.onError(it)
                 })
     
                 emitter.setCancellable {
@@ -79,9 +82,11 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
                 start()
             }.doFinally {
                 message("doFinally()")
-            }.subscribe { result ->
+            }.subscribe({ result ->
                 emit(result)
-            }
+            }, {
+                error(it.message)
+            })
         )
     }
 
@@ -90,7 +95,7 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
         compositeDisposable.clear()
         compositeDisposable.add(
             Flowable.create<Pair<UInt, UInt>>({ emitter ->
-                longActionEmit(0, items) { index, value ->
+                longActionEmit(0, items, false) { index, value ->
                     emitter.onNext(index to value)
                 }
                 emitter.onComplete()
@@ -103,10 +108,12 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             }.doFinally {
                 message("processed items: $processedItems")
                 message("doFinally()")
-            }.subscribe { result ->
+            }.subscribe({ result ->
                 ++processedItems
                 emit(result)
-            }
+            }, {
+                error(it.message)
+            })
         )
     }
 
@@ -114,39 +121,16 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
         compositeDisposable.clear()
         compositeDisposable.add(
             Single.create<UInt> { emitter ->
-                val thread = threadActionResult(2000) {
+                val thread = threadActionResult(delay = 2000, emitter = {
                     emitter.onSuccess(it)
-                }
+                }, error = {
+                    emitter.onError(it)
+                })
 
                 emitter.setCancellable {
                     thread.interrupt()
                 }
             }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .doOnSubscribe {
-                start()
-            }.doFinally {
-                message("doFinally()")
-            }.subscribe { result ->
-                result(result)
-            }
-        )
-    }
-
-    override fun timeout() {
-        compositeDisposable.clear()
-        compositeDisposable.add(
-            Single.create<UInt> { emitter ->
-                val thread = threadActionResult(3000) {
-                    emitter.onSuccess(it)
-                }
-
-                emitter.setCancellable {
-                    thread.interrupt()
-                }
-            }
-            .timeout(2000, TimeUnit.MILLISECONDS)
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .doOnSubscribe {
@@ -156,17 +140,48 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             }.subscribe({ result ->
                 result(result)
             }, {
-                message("subscribe(${it.message})")
+                error(it.message)
+            })
+        )
+    }
+
+    override fun timeout() {
+        compositeDisposable.clear()
+        compositeDisposable.add(
+            Single.create<UInt> { emitter ->
+                val thread = threadActionResult(delay = 3000, emitter = {
+                    emitter.onSuccess(it)
+                }, error = {
+                    emitter.onError(it)
+                })
+
+                emitter.setCancellable {
+                    thread.interrupt()
+                }
+            }
+            .timeout(2000, TimeUnit.MILLISECONDS, Schedulers.trampoline())
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .doOnSubscribe {
+                start()
+            }.doFinally {
+                message("doFinally()")
+            }.subscribe({ result ->
+                result(result)
+            }, {
+                error(it.message)
             })
         )
     }
 
     override fun combineLatest() {
-        val observableOne = Observable.create<String> { emitter ->
-            val thread = threadActionEmit(7000, 7U, { index, value ->
+        val observableA = Observable.create<String> { emitter ->
+            val thread = threadActionEmit(delay = 7000, count = 7U, emitter = { index, value ->
                 emitter.onNext((index + 1U).toString())
-            }, {
+            }, complete = {
                 emitter.onComplete()
+            }, error = {
+                emitter.onError(it)
             })
 
             emitter.setCancellable {
@@ -174,16 +189,16 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             }
         }
 
-        val observableTwo = Observable.just("1", "2", "3", "4", "5")
+        val observableB = Observable.just("1", "2", "3", "4", "5")
             .zipWith(Observable.interval(500, TimeUnit.MILLISECONDS), { item, interval -> item })
 
-        val observableThree = Observable.just("1", "2", "3", "4", "5", "6")
+        val observableC = Observable.just("1", "2", "3", "4", "5", "6")
             .zipWith(Observable.interval(250, TimeUnit.MILLISECONDS), { item, interval -> item })
 
         compositeDisposable.clear()
         compositeDisposable.add(
-            Observable.combineLatest(observableOne, observableTwo, observableThree) { one, two, three ->
-                "$one-$two-$three"
+            Observable.combineLatest(observableA, observableB, observableC) { one, two, three ->
+                "A$one-B$two-C$three"
             }
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
@@ -191,18 +206,22 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
                 start()
             }.doFinally {
                 message("doFinally()")
-            }.subscribe { result ->
+            }.subscribe({ result ->
                 emit(result)
-            }
+            }, {
+                error(it.message)
+            })
         )
     }
 
     override fun zip() {
-        val observableOne = Observable.create<String> { emitter ->
-            val thread = threadActionEmit(7000, 7U, { index, value ->
+        val observableA = Observable.create<String> { emitter ->
+            val thread = threadActionEmit(delay = 7000, count = 7U, emitter = { index, value ->
                 emitter.onNext((index + 1U).toString())
-            }, {
+            }, complete = {
                 emitter.onComplete()
+            }, error = {
+                emitter.onError(it)
             })
 
             emitter.setCancellable {
@@ -210,16 +229,16 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             }
         }
 
-        val observableTwo = Observable.just("1", "2", "3", "4", "5")
+        val observableB = Observable.just("1", "2", "3", "4", "5")
             .zipWith(Observable.interval(500, TimeUnit.MILLISECONDS)){ item, interval -> item }
 
-        val observableThree = Observable.just("1", "2", "3", "4", "5", "6")
+        val observableC = Observable.just("1", "2", "3", "4", "5", "6")
             .zipWith(Observable.interval(250, TimeUnit.MILLISECONDS)) { item, interval -> item }
 
         compositeDisposable.clear()
         compositeDisposable.add(
-            Observable.zip(observableOne, observableTwo, observableThree) { one, two, three ->
-                "$one-$two-$three"
+            Observable.zip(observableA, observableB, observableC) { one, two, three ->
+                "A$one-B$two-C$three"
             }
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
@@ -227,111 +246,43 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
                 start()
             }.doFinally {
                 message("doFinally()")
-            }.subscribe { result ->
+            }.subscribe({ result ->
                 emit(result)
-            }
+            }, {
+                error(it.message)
+            })
         )
     }
 
     override fun flatMap() {
         compositeDisposable.clear()
         compositeDisposable.add(
-            Observable.create<Pair<UInt, UInt>> { emitter ->
-                val thread = threadActionEmit(5000, 5U, { index, value ->
-                    emitter.onNext(index to value)
-                }, {
+            Observable.create<Triple<UInt, UInt, String>> { emitter ->
+                val threadName = Thread.currentThread().name
+                val thread = threadActionEmit(delay = 5000, count = 5U, emitter = { index, value ->
+                    emitter.onNext(Triple(index, value, "${Thread.currentThread().name}, $threadName"))
+                }, complete = {
                     emitter.onComplete()
+                }, error = {
+                    emitter.onError(it)
                 })
                 emitter.setCancellable {
                     thread.interrupt()
                 }
             }
             .observeOn(Schedulers.io())
-            .flatMap { pair ->
+            .flatMap { triple ->
                 Observable.create<String> { emitter ->
-                    emitter.onNext("---- $pair")
-                    val thread = threadActionEmit(2000, 4U, { index, value ->
-                        emitter.onNext("${index + 1U}-$value-${Thread.currentThread().id}")
-                    }, {
-                        emitter.onComplete()
-                    })
-                    emitter.setCancellable {
-                        thread.interrupt()
-                    }
-                }
-            }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .doOnSubscribe {
-                start()
-            }.doFinally {
-                message("doFinally()")
-            }.subscribe { result ->
-                emit(result)
-            }
-        )
-    }
+                    emitter.onNext("--------------------------------------------------------")
+                    emitter.onNext(">$triple")
 
-    override fun switchMap() {
-        compositeDisposable.clear()
-        compositeDisposable.add(
-            Observable.create<Pair<UInt, UInt>> { emitter ->
-                val thread = threadActionEmit(5000, 5U, { index, value ->
-                    emitter.onNext(index to value)
-                }, {
-                    emitter.onComplete()
-                })
-                emitter.setCancellable {
-                    thread.interrupt()
-                }
-            }
-            .observeOn(Schedulers.io())
-            .switchMap { pair ->
-                Observable.create<String> { emitter ->
-                    emitter.onNext("---- $pair")
-                    val thread = threadActionEmit(2000, 4U, { index, value ->
-                        emitter.onNext("${index + 1U}-$value-${Thread.currentThread().id}")
-                    }, {
+                    val threadName = Thread.currentThread().name
+                    val thread = threadActionEmit(delay = 2000, count = 4U, emitter = { index, value ->
+                        emitter.onNext("${index + 1U}-$value, ${Thread.currentThread().name}, $threadName")
+                    }, complete = {
                         emitter.onComplete()
-                    })
-                    emitter.setCancellable {
-                        thread.interrupt()
-                    }
-                }
-            }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .doOnSubscribe {
-                start()
-            }.doFinally {
-                message("doFinally()")
-            }.subscribe { result ->
-                emit(result)
-            }
-        )
-    }
-
-    override fun concatMap() {
-        compositeDisposable.clear()
-        compositeDisposable.add(
-            Observable.create<Pair<UInt, UInt>> { emitter ->
-                val thread = threadActionEmit(5000, 5U, { index, value ->
-                    emitter.onNext(index to value)
-                }, {
-                    emitter.onComplete()
-                })
-                emitter.setCancellable {
-                    thread.interrupt()
-                }
-            }
-            .observeOn(Schedulers.io())
-            .concatMap { pair ->
-                Observable.create<String> { emitter ->
-                    emitter.onNext("---- $pair")
-                    val thread = threadActionEmit(2000, 4U, { index, value ->
-                        emitter.onNext("${index + 1U}-$value-${Thread.currentThread().id}")
-                    }, {
-                        emitter.onComplete()
+                    }, error = {
+                        emitter.onError(it)
                     })
                     emitter.setCancellable {
                         thread.interrupt()
@@ -344,17 +295,119 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
                 start()
             }.doFinally {
                 message("doFinally()")
-            }.subscribe { result ->
+            }.subscribe({ result ->
                 emit(result)
+            }, {
+                error(it.message)
+            })
+        )
+    }
+
+    override fun switchMap() {
+        compositeDisposable.clear()
+        compositeDisposable.add(
+            Observable.create<Triple<UInt, UInt, String>> { emitter ->
+                val threadName = Thread.currentThread().name
+                val thread = threadActionEmit(delay = 5000, count = 5U, emitter = { index, value ->
+                    emitter.onNext(Triple(index, value, "${Thread.currentThread().name}, $threadName"))
+                }, complete = {
+                    emitter.onComplete()
+                }, error = {
+                    emitter.onError(it)
+                })
+                emitter.setCancellable {
+                    thread.interrupt()
+                }
             }
+            .observeOn(Schedulers.io())
+            .switchMap { triple ->
+                Observable.create<String> { emitter ->
+                    emitter.onNext("--------------------------------------------------------")
+                    emitter.onNext(">$triple")
+
+                    val threadName = Thread.currentThread().name
+                    val thread = threadActionEmit(delay = 2000, count = 4U, emitter = { index, value ->
+                        emitter.onNext("${index + 1U}-$value, ${Thread.currentThread().name}, $threadName")
+                    }, complete = {
+                        emitter.onComplete()
+                    }, error = {
+                        emitter.onError(it)
+                    })
+                    emitter.setCancellable {
+                        thread.interrupt()
+                    }
+                }.observeOn(Schedulers.io())
+            }
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .doOnSubscribe {
+                start()
+            }.doFinally {
+                message("doFinally()")
+            }.subscribe({ result ->
+                emit(result)
+            }, {
+                error(it.message)
+            })
+        )
+    }
+
+    override fun concatMap() {
+        compositeDisposable.clear()
+        compositeDisposable.add(
+            Observable.create<Triple<UInt, UInt, String>> { emitter ->
+                val threadName = Thread.currentThread().name
+                val thread = threadActionEmit(delay = 5000, count = 5U, emitter = { index, value ->
+                    emitter.onNext(Triple(index, value, "${Thread.currentThread().name}, $threadName"))
+                }, complete = {
+                    emitter.onComplete()
+                }, error = {
+                    emitter.onError(it)
+                })
+                emitter.setCancellable {
+                    thread.interrupt()
+                }
+            }
+            .observeOn(Schedulers.io())
+            .concatMap { triple ->
+                Observable.create<String> { emitter ->
+                    emitter.onNext("--------------------------------------------------------")
+                    emitter.onNext(">$triple")
+
+                    val threadName = Thread.currentThread().name
+                    val thread = threadActionEmit(delay = 2000, count = 4U, emitter = { index, value ->
+                        emitter.onNext("${index + 1U}-$value, ${Thread.currentThread().name}, $threadName")
+                    }, complete = {
+                        emitter.onComplete()
+                    }, error = {
+                        emitter.onError(it)
+                    })
+                    emitter.setCancellable {
+                        thread.interrupt()
+                    }
+                }.observeOn(Schedulers.io())
+            }
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .doOnSubscribe {
+                start()
+            }.doFinally {
+                message("doFinally()")
+            }.subscribe({ result ->
+                emit(result)
+            }, {
+                error(it.message)
+            })
         )
     }
 
     override fun distinctUntilChanged() {
         compositeDisposable.clear()
         compositeDisposable.add(
-            Observable.just("hello", "hello", "world")
-                .zipWith(Observable.interval(500, TimeUnit.MILLISECONDS)){ item, interval -> item }
+            Observable.just("hello", "hello", "world", "world")
+                .zipWith(Observable.interval(500, TimeUnit.MILLISECONDS, Schedulers.trampoline())) { item, interval ->
+                    item to Thread.currentThread().name
+                }
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .distinctUntilChanged()
@@ -375,12 +428,16 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             Observable.just(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
                 .concatMap {
                     if (it % 2 == 0) {
-                        Observable.just(it).delay(1010, TimeUnit.MILLISECONDS)
+                        Observable.just(it)
+                            .delay(1010, TimeUnit.MILLISECONDS, Schedulers.io())
                     } else {
                         Observable.just(it)
                     }
                 }
-                .debounce(1000, TimeUnit.MILLISECONDS)
+                .debounce(1000, TimeUnit.MILLISECONDS, Schedulers.io())
+                .map {
+                    "$it-${Thread.currentThread().name}"
+                }
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .doOnSubscribe {
@@ -406,6 +463,9 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             2 -> AsyncSubject.create<Int>().apply {
                 observeOn(AndroidSchedulers.mainThread())
             }
+            3 -> UnicastSubject.create<Int>().apply {
+                observeOn(AndroidSchedulers.mainThread())
+            }
             else -> PublishSubject.create<Int>().apply {
                 observeOn(AndroidSchedulers.mainThread())
             }
@@ -414,17 +474,21 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
         compositeDisposable.add(
             bus.delaySubscription(1000, TimeUnit.MILLISECONDS)
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe {
+                .subscribe({
                     emit("one - $it")
-                }
+                }, {
+                    error(it.message)
+                })
         )
 
         compositeDisposable.add(
             bus.delaySubscription(2000, TimeUnit.MILLISECONDS)
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe {
+                .subscribe({
                     emit("two - $it")
-                }
+                }, {
+                    error(it.message)
+                })
         )
 
         compositeDisposable.add(
@@ -456,10 +520,12 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             .doFinally { emit("Single done") }
 
         val observable = Observable.create<Pair<UInt, UInt>> { emiter ->
-            val thread = threadActionEmit(delay = 4000, count = 5U, { index, value ->
+            val thread = threadActionEmit(delay = 4000, count = 5U, emitter = { index, value ->
                 emiter.onNext(index to value)
-            }, {
+            }, complete = {
                 emiter.onComplete()
+            }, error = {
+                emiter.onError(it)
             })
 
             emiter.setCancellable { thread.interrupt() }
@@ -468,16 +534,18 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             .doFinally { emit("Observable done") }
 
         val flowable = Flowable.create<Pair<UInt, UInt>> ({ emiter ->
-            val thread = threadActionEmit(delay = 2000, count = 5U, { index, value ->
+            val thread = threadActionEmit(delay = 2000, count = 5U, emitter = { index, value ->
                 emiter.onNext(index to value)
-            }, {
+            }, complete = {
                 emiter.onComplete()
+            }, error = {
+                emiter.onError(it)
             })
 
             emiter.setCancellable { thread.interrupt() }
         }, BackpressureStrategy.BUFFER)
 
-        completable
+        compositeDisposable.add(completable
             .observeOn(Schedulers.io())
             .andThen(single)
             .observeOn(Schedulers.io())
@@ -486,15 +554,19 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             .observeOn(Schedulers.io())
             .switchMap { observableResult ->
                 flowable
-                    .observeOn(Schedulers.io())
                     .map {
-                        "${observableResult.first} - $it - ${Thread.currentThread().id}"
+                        "${observableResult.first} - $it - ${Thread.currentThread().name}"
                     }
             }
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .doOnSubscribe { start() }
             .doFinally { message("doFinally()") }
-            .subscribe { emit(it, R.color.colorFour) }
+            .subscribe({
+                emit(it, R.color.colorFour)
+            }, {
+                error(it.message)
+            })
+        );
     }
 }

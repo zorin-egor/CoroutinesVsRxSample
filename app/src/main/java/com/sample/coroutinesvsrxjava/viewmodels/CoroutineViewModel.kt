@@ -22,9 +22,13 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
         return runInterruptible(block = ::longActionResult)
     }
 
-    private suspend fun suspendLongActionEmit(delay: Long = 3000, count: UInt = 10U, emitter: (UInt, UInt) -> Unit) {
+    private suspend fun suspendLongActionEmit(
+        delay: Long = 3000,
+        count: UInt = 10U,
+        emitter: (UInt, UInt) -> Unit
+    ) {
         return runInterruptible {
-            longActionEmit(delay, count) { index, value ->
+            longActionEmit(delay, count, false) { index, value ->
                 emitter(index, value)
             }
         }
@@ -32,15 +36,18 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
 
     override fun completable() {
         viewModelScope.coroutineContext.cancelChildren()
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.Main + CoroutineExceptionHandler { context, error ->
+            error("CoroutineExceptionHandler(${error.message ?: "-"})")
+        }) {
             start()
-             withContext(Dispatchers.IO) {
+            withContext(Dispatchers.IO) {
                 suspendLongAction()
             }
-            result("Complete")
         }.apply {
             invokeOnCompletion {
-                message("invokeOnCompletion(${it?.message ?: ""})")
+                if (it == null) {
+                    result("invokeOnCompletion()")
+                }
             }
         }
     }
@@ -49,10 +56,11 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
         viewModelScope.coroutineContext.cancelChildren()
         viewModelScope.launch {
             start()
-            val result = withContext(Dispatchers.IO) {
-                suspendLongAction()
+            try {
+                withContext(Dispatchers.IO) { suspendLongAction() }.apply(::result)
+            } catch (e: Exception) {
+                error(e.message)
             }
-            result(result)
         }.apply {
             invokeOnCompletion {
                 message("invokeOnCompletion(${it?.message ?: ""})")
@@ -68,6 +76,8 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
                     sendBlocking(index to value)
                 }, complete = {
                     close()
+                }, error = {
+                    close(it)
                 })
 
                 awaitClose {
@@ -79,6 +89,8 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
                 start()
             }.onCompletion {
                 message("onCompletion(${it?.message ?: ""})")
+            }.catch {
+                error(it.message)
             }.collect { result ->
                 emit(result)
             }
@@ -115,9 +127,11 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             start()
 
             val result = suspendCancellableCoroutine<UInt> { continuation ->
-                val thread = threadActionResult(2000) {
+                val thread = threadActionResult(delay = 2000, emitter = {
                     continuation.resume(it)
-                }
+                }, error = {
+                    continuation.cancel(it)
+                })
 
                 continuation.invokeOnCancellation {
                     thread.interrupt()
@@ -139,9 +153,11 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
 
             val result = withTimeout(2000) {
                 suspendCancellableCoroutine<UInt> { continuation ->
-                    val thread = threadActionResult(3000) {
+                    val thread = threadActionResult(delay = 3000, emitter = {
                         continuation.resume(it)
-                    }
+                    }, error = {
+                        continuation.cancel(it)
+                    })
 
                     continuation.invokeOnCancellation {
                         thread.interrupt()
@@ -152,17 +168,23 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             result(result)
         }.apply {
             invokeOnCompletion {
-                message("invokeOnCompletion(${it?.message ?: ""})")
+                if (it != null) {
+                    error("invokeOnCompletion(${it.message})")
+                } else {
+                    message("invokeOnCompletion()")
+                }
             }
         }
     }
 
     override fun combineLatest() {
-        val flowOne = callbackFlow {
-            val thread = threadActionEmit(7000, 7U, { index, value ->
+        val flowA = callbackFlow {
+            val thread = threadActionEmit(delay = 7000, count = 7U, emitter = { index, value ->
                 sendBlocking((index + 1U).toString())
-            }, {
+            }, complete = {
                 close()
+            }, error = {
+                close(it)
             })
 
             awaitClose {
@@ -170,28 +192,30 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             }
         }
 
-        val flowTwo = flowOf("1", "2", "3", "4", "5")
+        val flowB = flowOf("1", "2", "3", "4", "5")
             .onEach {
                 delay(500)
             }
 
-        val flowThree = flowOf("1", "2", "3", "4", "5", "6")
+        val flowC = flowOf("1", "2", "3", "4", "5", "6")
             .onEach {
                 delay(250)
             }
 
         viewModelScope.coroutineContext.cancelChildren()
         viewModelScope.launch {
-            flowOne.combine(flowTwo) { value1, value2 ->
-                "$value1-$value2"
-            }.combine(flowThree) { value1, value2 ->
-                "$value1-$value2"
+            flowA.combine(flowB) { value1, value2 ->
+                "A$value1-B$value2"
+            }.combine(flowC) { value1, value2 ->
+                "$value1-C$value2"
             }
             .flowOn(Dispatchers.IO)
             .onStart {
                 start()
             }.onCompletion {
                 message("onCompletion(${it?.message ?: ""})")
+            }.catch {
+                error(it.message)
             }.collect { result ->
                 emit(result)
             }
@@ -199,11 +223,13 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
     }
 
     override fun zip() {
-        val flowOne = callbackFlow {
-            val thread = threadActionEmit(7000, 7U, { index, value ->
+        val flowA = callbackFlow {
+            val thread = threadActionEmit(delay = 7000, count = 7U, emitter = { index, value ->
                 sendBlocking((index + 1U).toString())
-            }, {
+            }, complete = {
                 close()
+            }, error = {
+                close(it)
             })
 
             awaitClose {
@@ -211,28 +237,30 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             }
         }
 
-        val flowTwo = flowOf("1", "2", "3", "4", "5")
+        val flowB = flowOf("1", "2", "3", "4", "5")
             .onEach {
                 delay(500)
             }
 
-        val flowThree = flowOf("1", "2", "3", "4", "5", "6")
+        val flowC = flowOf("1", "2", "3", "4", "5", "6")
             .onEach {
                 delay(250)
             }
 
         viewModelScope.coroutineContext.cancelChildren()
         viewModelScope.launch {
-            flowOne.zip(flowTwo) { value1, value2 ->
-                "$value1-$value2"
-            }.zip(flowThree) { value1, value2 ->
-                "$value1-$value2"
+            flowA.zip(flowB) { value1, value2 ->
+                "A$value1-B$value2"
+            }.zip(flowC) { value1, value2 ->
+                "$value1-C$value2"
             }
             .flowOn(Dispatchers.IO)
             .onStart {
                 start()
             }.onCompletion {
                 message("onCompletion(${it?.message ?: ""})")
+            }.catch { 
+                error(it.message)    
             }.collect { result ->
                 emit(result)
             }
@@ -243,23 +271,31 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
         viewModelScope.coroutineContext.cancelChildren()
         viewModelScope.launch {
             callbackFlow {
-                val thread = threadActionEmit(delay = 5000, 5U, { index, value ->
-                    sendBlocking(index to value)
-                }, {
+                val threadName = Thread.currentThread().name
+                val thread = threadActionEmit(delay = 5000, count = 5U, emitter = { index, value ->
+                    sendBlocking(Triple(index, value, "${Thread.currentThread().name}, $threadName"))
+                }, complete = {
                     close()
+                }, error = {
+                    close(it)
                 })
 
                 awaitClose {
                     thread.interrupt()
                 }
             }
-            .flatMapMerge { pair ->
+            .flatMapMerge { triple ->
                 callbackFlow {
-                    offer("---- $pair")
-                    val thread = threadActionEmit(delay = 2000, 4U, { index, value ->
-                        sendBlocking("${index + 1U}-$value-${Thread.currentThread().id}")
-                    }, {
+                    offer("--------------------------------------------------------")
+                    offer(">$triple")
+
+                    val threadName = Thread.currentThread().name
+                    val thread = threadActionEmit(delay = 2000, count = 4U, emitter = { index, value ->
+                        sendBlocking("${index + 1U}-$value, ${Thread.currentThread().name}, $threadName")
+                    }, complete = {
                         close()
+                    }, error = {
+                        close(it)
                     })
 
                     awaitClose {
@@ -272,6 +308,8 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
                 start()
             }.onCompletion {
                 message("onCompletion(${it?.message ?: ""})")
+            }.catch {
+                error(it.message)
             }.collect { result ->
                 emit(result)
             }
@@ -282,23 +320,31 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
         viewModelScope.coroutineContext.cancelChildren()
         viewModelScope.launch {
             callbackFlow {
-                val thread = threadActionEmit(delay = 5000, 5U, { index, value ->
-                    sendBlocking(index to value)
-                }, {
+                val threadName = Thread.currentThread().name
+                val thread = threadActionEmit(delay = 5000, count = 5U, emitter = { index, value ->
+                    sendBlocking(Triple(index, value, "${Thread.currentThread().name}, $threadName"))
+                }, complete = {
                     close()
+                }, error = {
+                    close(it)
                 })
 
                 awaitClose {
                     thread.interrupt()
                 }
             }
-            .flatMapLatest { pair ->
+            .flatMapLatest { triple ->
                 callbackFlow {
-                    offer("---- $pair")
-                    val thread = threadActionEmit(delay = 2000, 4U, { index, value ->
-                        sendBlocking("${index + 1U}-$value-${Thread.currentThread().id}")
-                    }, {
+                    offer("--------------------------------------------------------")
+                    offer(">$triple")
+
+                    val threadName = Thread.currentThread().name
+                    val thread = threadActionEmit(delay = 2000, count = 4U, emitter = { index, value ->
+                        sendBlocking("${index + 1U}-$value, ${Thread.currentThread().name}, $threadName")
+                    }, complete = {
                         close()
+                    }, error = {
+                        close(it)
                     })
 
                     awaitClose {
@@ -311,6 +357,8 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
                 start()
             }.onCompletion {
                 message("onCompletion(${it?.message ?: ""})")
+            }.catch {
+                error(it.message)
             }.collect { result ->
                 emit(result)
             }
@@ -321,23 +369,31 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
         viewModelScope.coroutineContext.cancelChildren()
         viewModelScope.launch {
             callbackFlow {
-                val thread = threadActionEmit(delay = 5000, 5U, { index, value ->
-                    sendBlocking(index to value)
-                }, {
+                val threadName = Thread.currentThread().name
+                val thread = threadActionEmit(delay = 5000, count = 5U, emitter = { index, value ->
+                    sendBlocking(Triple(index, value, "${Thread.currentThread().name}, $threadName"))
+                }, complete = {
                     close()
+                }, error = {
+                    close(it)
                 })
 
                 awaitClose {
                     thread.interrupt()
                 }
             }
-            .flatMapConcat { pair ->
+            .flatMapConcat { triple ->
                 callbackFlow {
-                    offer("---- $pair")
-                    val thread = threadActionEmit(delay = 2000, 4U, { index, value ->
-                        sendBlocking("${index + 1U}-$value-${Thread.currentThread().id}")
-                    }, {
+                    offer("--------------------------------------------------------")
+                    offer(">$triple")
+
+                    val threadName = Thread.currentThread().name
+                    val thread = threadActionEmit(delay = 2000, count = 4U, emitter = { index, value ->
+                        sendBlocking("${index + 1U}-$value, ${Thread.currentThread().name}, $threadName")
+                    }, complete = {
                         close()
+                    }, error = {
+                        close(it)
                     })
 
                     awaitClose {
@@ -350,6 +406,8 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
                 start()
             }.onCompletion {
                 message("onCompletion(${it?.message ?: ""})")
+            }.catch {
+                error(it.message)
             }.collect { result ->
                 emit(result)
             }
@@ -360,8 +418,9 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
         viewModelScope.coroutineContext.cancelChildren()
         viewModelScope.launch {
             flowOf("hello", "hello", "world")
-            .onEach {
+            .map {
                 delay(500)
+                it to Thread.currentThread().name
             }
             .flowOn(Dispatchers.IO)
             .onStart {
@@ -386,6 +445,9 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
                 }
             }
             .debounce(1000)
+            .map {
+                "$it-${Thread.currentThread().name}"
+            }
             .flowOn(Dispatchers.IO)
             .onStart {
                 start()
@@ -454,10 +516,12 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             emit("Single done")
 
             callbackFlow {
-                val thread = threadActionEmit(delay = 4000, 5U, { index, value ->
+                val thread = threadActionEmit(delay = 4000, count = 5U, emitter = { index, value ->
                     sendBlocking(index to value)
-                }, {
+                }, complete = {
                     close()
+                }, error = {
+                    close(it)
                 })
 
                 awaitClose { thread.interrupt() }
@@ -468,16 +532,19 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             .flowOn(Dispatchers.Main)
             .flatMapLatest { pair ->
                 callbackFlow {
-                    val thread = threadActionEmit(delay = 2000, 5U, { index, value ->
-                        sendBlocking("${pair.first} - ${index to value}) - ${Thread.currentThread().id}")
-                    }, {
+                    val thread = threadActionEmit(delay = 2000, count = 5U, emitter = { index, value ->
+                        sendBlocking("${pair.first} - ${index to value}) - ${Thread.currentThread().name}")
+                    }, complete = {
                         close()
+                    }, error = {
+                        close(it)
                     })
 
                     awaitClose { thread.interrupt() }
                 }
             }
             .flowOn(Dispatchers.IO)
+            .catch { error(it.message) }
             .collect { emit(it, R.color.colorFour) }
         }.apply {
             invokeOnCompletion {

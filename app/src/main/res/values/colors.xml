@@ -6,9 +6,10 @@
     <color name="colorRipple">#1f000000</color>
 
     <color name="colorText">#B2000000</color>
-    <color name="colorStart">#FF0000</color>
+    <color name="colorStart">#9C27B0</color>
     <color name="colorProgress">#000DFF</color>
     <color name="colorResult">#00C60A</color>
+    <color name="colorError">#E91E63</color>
 
     <color name="colorOne">#00BCD4</color>
     <color name="colorTwo">#FF9800</color>

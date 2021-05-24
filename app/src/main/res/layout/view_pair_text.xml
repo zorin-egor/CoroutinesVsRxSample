@@ -5,13 +5,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="8dp">
+    android:padding="@dimen/default_medium">
 
     <HorizontalScrollView
         android:id="@+id/rxActionHorizontalScroll"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginEnd="2dp"
+        android:layout_marginEnd="@dimen/default_micro"
         android:background="@drawable/drawable_background_border"
         android:fillViewport="true"
         app:layout_constraintTop_toTopOf="parent"
@@ -29,7 +29,7 @@
                 android:id="@+id/rxActionText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:padding="8dp"
+                android:padding="@dimen/default_medium"
                 tools:text="RxLog"
                 />
         </ScrollView>
@@ -38,12 +38,12 @@
 
     <View
         android:id="@+id/guideLine"
-        android:layout_width="4dp"
+        android:layout_width="@dimen/default_small"
         android:layout_height="0dp"
         android:background="@drawable/drawable_background_rounded"
         android:backgroundTint="@color/colorAccent"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
+        android:layout_marginTop="@dimen/default_medium"
+        android:layout_marginBottom="@dimen/default_medium"
         android:clickable="true"
         android:focusable="true"
         app:layout_constraintTop_toTopOf="parent"
@@ -57,7 +57,7 @@
         android:id="@+id/coroutineActionHorizontalScroll"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginStart="2dp"
+        android:layout_marginStart="@dimen/default_micro"
         android:background="@drawable/drawable_background_border"
         android:fillViewport="true"
         app:layout_constraintTop_toTopOf="parent"
@@ -74,7 +74,7 @@
                 android:id="@+id/coroutineActionText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:padding="8dp"
+                android:padding="@dimen/default_medium"
                 tools:text="CoroutineLog"
                 />
         </ScrollView>

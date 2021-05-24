@@ -23,7 +23,9 @@ import com.sample.coroutinesvsrxjava.viewmodels.CoroutineViewModel
 import com.sample.coroutinesvsrxjava.viewmodels.RxViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.InternalCoroutinesApi
 
+@InternalCoroutinesApi
 @ExperimentalCoroutinesApi
 @FlowPreview
 @ExperimentalUnsignedTypes

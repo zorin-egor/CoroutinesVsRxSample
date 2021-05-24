@@ -1,5 +1,7 @@
 <resources>
     <string name="app_name">CoroutinesVsRxJava</string>
+    <string name="rx_title">RxJava</string>
+    <string name="coroutine_title">Coroutines</string>
     <string name="log_rx">Rx log:\n</string>
     <string name="log_coroutine">Coroutine log:\n</string>
     <string name="simultaneous_action">Is simultaneous action</string>
@@ -41,5 +43,6 @@
     <string name="action_start">start</string>
     <string name="action_emit">emit: %1$s</string>
     <string name="action_result">result: %1$s</string>
+    <string name="action_error">error: %1$s</string>
 
 </resources>
