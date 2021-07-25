@@ -10,8 +10,8 @@ import com.sample.coroutinesvsrxjava.managers.getTime
 import com.sample.coroutinesvsrxjava.managers.plus
 import com.sample.coroutinesvsrxjava.managers.toSpanned
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlin.concurrent.thread
 import kotlin.random.Random
@@ -31,7 +31,7 @@ abstract class BaseViewModel(private val app: Application) : AndroidViewModel(ap
         onBufferOverflow = BufferOverflow.SUSPEND
     )
 
-    val result: SharedFlow<Spanned?> = _result.asSharedFlow()
+    val result: Flow<Spanned?> = _result.asSharedFlow()
 
     protected fun longActionResult(delay: Long = 1000): UInt {
         return try {
