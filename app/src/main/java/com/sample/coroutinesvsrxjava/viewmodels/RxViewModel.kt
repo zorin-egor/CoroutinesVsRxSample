@@ -1,8 +1,6 @@
 package com.sample.coroutinesvsrxjava.viewmodels
 
 import android.app.Application
-import android.text.Spanned
-import androidx.lifecycle.MutableLiveData
 import com.sample.coroutinesvsrxjava.R
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.*
@@ -16,8 +14,6 @@ import kotlin.random.Random
 class RxViewModel(application: Application) : BaseViewModel(application), Actions {
 
     private val compositeDisposable = CompositeDisposable()
-
-    override val result = MutableLiveData<Spanned?>()
 
     override fun onCleared() {
         compositeDisposable.clear()

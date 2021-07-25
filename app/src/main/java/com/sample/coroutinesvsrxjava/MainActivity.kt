@@ -178,7 +178,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setData() {
-        coroutineViewModel.result.observe(this) {
+        coroutineViewModel.result.flowLifecycle(this) {
             when (it) {
                 null -> setCoroutineInitialText()
                 else -> coroutineLog.append(it) {
@@ -187,7 +187,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        rxViewModel.result.observe(this) {
+        rxViewModel.result.flowLifecycle(this) {
             when (it) {
                 null -> setRxInitialText()
                 else -> rxLog.append(it) {

@@ -5,11 +5,14 @@ import android.text.Spanned
 import android.util.Log
 import androidx.annotation.ColorRes
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.MutableLiveData
 import com.sample.coroutinesvsrxjava.R
 import com.sample.coroutinesvsrxjava.managers.getTime
 import com.sample.coroutinesvsrxjava.managers.plus
 import com.sample.coroutinesvsrxjava.managers.toSpanned
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlin.concurrent.thread
 import kotlin.random.Random
 import kotlin.random.nextUInt
@@ -22,7 +25,13 @@ abstract class BaseViewModel(private val app: Application) : AndroidViewModel(ap
         private val TAG = BaseViewModel::class.java.simpleName
     }
 
-    abstract val result: MutableLiveData<Spanned?>
+    private val _result = MutableSharedFlow<Spanned?>(
+        replay = 1,
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.SUSPEND
+    )
+
+    val result: SharedFlow<Spanned?> = _result.asSharedFlow()
 
     protected fun longActionResult(delay: Long = 1000): UInt {
         return try {
@@ -67,7 +76,7 @@ abstract class BaseViewModel(private val app: Application) : AndroidViewModel(ap
     }
 
     protected fun threadActionEmit(
-        delay: Long = 3000,
+        delay: Long = 5000,
         count: UInt = 10U,
         emitter: (UInt, UInt) -> Unit,
         complete: () -> Unit,
@@ -90,7 +99,7 @@ abstract class BaseViewModel(private val app: Application) : AndroidViewModel(ap
                 value.toString().toSpanned(app, R.color.colorResult)
 
         Log.d(TAG, message.toString())
-        result.value = message
+        _result.tryEmit(message)
     }
 
     protected fun start() {
@@ -98,8 +107,8 @@ abstract class BaseViewModel(private val app: Application) : AndroidViewModel(ap
                 app.getString(R.string.action_start).toSpanned(app, R.color.colorStart)
 
         Log.d(TAG, message.toString())
-        result.value = null
-        result.value = message
+        _result.tryEmit(null)
+        _result.tryEmit(message)
     }
 
     protected fun <T> emit(value: T, @ColorRes colorId: Int = R.color.colorProgress) {
@@ -107,7 +116,7 @@ abstract class BaseViewModel(private val app: Application) : AndroidViewModel(ap
                 app.getString(R.string.action_emit, value.toString()).toSpanned(app, colorId)
 
         Log.d(TAG, message.toString())
-        result.value = message
+        _result.tryEmit(message)
     }
 
     protected fun <T> result(value: T) {
@@ -115,7 +124,7 @@ abstract class BaseViewModel(private val app: Application) : AndroidViewModel(ap
                 app.getString(R.string.action_result, value.toString()).toSpanned(app, R.color.colorResult)
 
         Log.d(TAG, message.toString())
-        result.value = message
+        _result.tryEmit(message)
     }
 
     protected fun <T> error(value: T? = null) {
@@ -123,7 +132,7 @@ abstract class BaseViewModel(private val app: Application) : AndroidViewModel(ap
                 app.getString(R.string.action_error, (value ?: "-").toString()).toSpanned(app, R.color.colorError)
 
         Log.e(TAG, message.toString())
-        result.value = message
+        _result.tryEmit(message)
     }
 
     private fun errorGenerator(value: UInt, mod: UInt = 15U) {

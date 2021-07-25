@@ -18,6 +18,13 @@ import android.widget.TextView
 import androidx.annotation.ColorInt
 import androidx.annotation.ColorRes
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.flowWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -71,4 +78,10 @@ fun ViewGroup.forEachChild(action: (View, Int) -> Unit) {
 
 fun Int.toDp(resources: Resources): Float {
     return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, toFloat(), resources.displayMetrics)
+}
+
+inline fun <T> Flow<T>.flowLifecycle(lifecycle: LifecycleOwner, crossinline onEach: (T) -> Unit) {
+    flowWithLifecycle(lifecycle.lifecycle, Lifecycle.State.CREATED)
+        .onEach { onEach(it) }
+        .launchIn(lifecycle.lifecycleScope)
 }
