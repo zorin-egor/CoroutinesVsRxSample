@@ -4,7 +4,9 @@ import android.app.Application
 import androidx.lifecycle.viewModelScope
 import com.sample.coroutinesvsrxjava.R
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.*
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.flow.*
 import kotlin.coroutines.resume
 import kotlin.random.Random
@@ -465,6 +467,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
     override fun eventBus() {
         viewModelScope.coroutineContext.cancelChildren()
 
+        // Consume value by subscribers
 //        val bus = when(Random.nextInt(4)) {
 //            0 -> Channel<Int>(Channel.UNLIMITED)
 //            1 -> Channel<Int>(Channel.CONFLATED)
@@ -472,21 +475,32 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
 //            else -> Channel<Int>(Channel.BUFFERED)
 //        }
 
+        // Not consume value by subscribers
         val bus = when(Random.nextInt(2)) {
-            0 -> BroadcastChannel(Channel.CONFLATED)
-            else -> BroadcastChannel<Int>(Channel.BUFFERED)
+            0 -> MutableStateFlow<Int>(0)
+            else -> MutableSharedFlow<Int>(
+                replay = 100,
+                extraBufferCapacity = 100,
+                onBufferOverflow = BufferOverflow.DROP_OLDEST
+            )
         }
 
         viewModelScope.launch {
-            delay(1000)
-            bus.openSubscription().consumeEach {
+            delay(2000)
+//            bus.consumeEach {
+//                emit("one - $it")
+//            }
+            bus.collect {
                 emit("one - $it")
             }
         }
 
         viewModelScope.launch {
-            delay(2000)
-            bus.asFlow().collect {
+            delay(4000)
+//            bus.consumeAsFlow().collect {
+//                emit("two - $it")
+//            }
+            bus.collect {
                 emit("two - $it")
             }
         }
@@ -494,12 +508,12 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
         viewModelScope.launch {
             start()
             message( "Channel is: ${bus.javaClass.simpleName}")
-            (1..10).forEach {
-                bus.trySend(it)
+            (1..20).forEach {
+//                bus.trySend(it)
+                bus.tryEmit(it)
                 delay(500)
             }
         }.invokeOnCompletion {
-            bus.cancel()
             message("onCompletion(${it?.message ?: ""})")
         }
     }
