@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.sample.coroutinesvsrxjava.R
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.flow.*
@@ -466,51 +467,47 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
 
     override fun eventBus() {
         viewModelScope.coroutineContext.cancelChildren()
+        
+        // Channels consume value by subscribers
+        var emiterChannel: Channel<Int>? = null
+        // Flows not consume values
+        var emiterFlow: MutableSharedFlow<Int>? = null
 
-        // Consume value by subscribers
-//        val bus = when(Random.nextInt(4)) {
-//            0 -> Channel<Int>(Channel.UNLIMITED)
-//            1 -> Channel<Int>(Channel.CONFLATED)
-//            2 -> Channel<Int>(Channel.RENDEZVOUS)
-//            else -> Channel<Int>(Channel.BUFFERED)
-//        }
-
-        // Not consume value by subscribers
-        val bus = when(Random.nextInt(2)) {
-            0 -> MutableStateFlow<Int>(0)
+        val receiver: Flow<Int> = when(Random.nextInt(6)) {
+            0 -> Channel<Int>(Channel.UNLIMITED).also { emiterChannel = it }.receiveAsFlow()
+            1 -> Channel<Int>(Channel.CONFLATED).also { emiterChannel = it }.receiveAsFlow()
+            2 -> Channel<Int>(Channel.RENDEZVOUS).also { emiterChannel = it }.receiveAsFlow()
+            3 -> Channel<Int>(Channel.BUFFERED).also { emiterChannel = it }.receiveAsFlow()
+            4 -> MutableStateFlow<Int>(0).also { emiterFlow = it }.asStateFlow()
             else -> MutableSharedFlow<Int>(
                 replay = 100,
                 extraBufferCapacity = 100,
                 onBufferOverflow = BufferOverflow.DROP_OLDEST
-            )
+            ).also { emiterFlow = it }.asSharedFlow()
         }
 
         viewModelScope.launch {
             delay(2000)
-//            bus.consumeEach {
-//                emit("one - $it")
-//            }
-            bus.collect {
+            receiver.buffer().collect {
+                delay(2000)
                 emit("one - $it")
             }
         }
 
         viewModelScope.launch {
             delay(4000)
-//            bus.consumeAsFlow().collect {
-//                emit("two - $it")
-//            }
-            bus.collect {
+            receiver.collect {
+                delay(1000)
                 emit("two - $it")
             }
         }
 
         viewModelScope.launch {
             start()
-            message( "Channel is: ${bus.javaClass.simpleName}")
-            (1..20).forEach {
-//                bus.trySend(it)
-                bus.tryEmit(it)
+            message( "Flow is: ${receiver.javaClass.simpleName}")
+            (1..20).forEach { index ->
+                emiterChannel?.trySend(index)
+                    ?: emiterFlow?.tryEmit(index)
                 delay(500)
             }
         }.invokeOnCompletion {
