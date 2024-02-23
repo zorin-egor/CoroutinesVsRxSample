@@ -417,7 +417,6 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
         )
     }
 
-
     override fun debounce() {
         compositeDisposable.clear()
         compositeDisposable.add(
@@ -450,21 +449,11 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
         compositeDisposable.clear()
 
         val bus = when (Random.nextInt(4)) {
-            0 -> BehaviorSubject.create<Int>().apply {
-                observeOn(AndroidSchedulers.mainThread())
-            }
-            1 -> ReplaySubject.create<Int>().apply {
-                observeOn(AndroidSchedulers.mainThread())
-            }
-            2 -> AsyncSubject.create<Int>().apply {
-                observeOn(AndroidSchedulers.mainThread())
-            }
-            3 -> UnicastSubject.create<Int>().apply {
-                observeOn(AndroidSchedulers.mainThread())
-            }
-            else -> PublishSubject.create<Int>().apply {
-                observeOn(AndroidSchedulers.mainThread())
-            }
+            0 -> BehaviorSubject.create<Int>()
+            1 -> ReplaySubject.create<Int>()
+            2 -> AsyncSubject.create<Int>()
+            3 -> UnicastSubject.create<Int>()
+            else -> PublishSubject.create<Int>()
         }
         
         compositeDisposable.add(

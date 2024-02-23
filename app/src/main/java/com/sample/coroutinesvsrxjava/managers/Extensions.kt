@@ -81,7 +81,7 @@ fun Int.toDp(resources: Resources): Float {
 }
 
 inline fun <T> Flow<T>.flowLifecycle(lifecycle: LifecycleOwner, crossinline onEach: (T) -> Unit) {
-    flowWithLifecycle(lifecycle.lifecycle, Lifecycle.State.CREATED)
+    flowWithLifecycle(lifecycle.lifecycle, Lifecycle.State.STARTED)
         .onEach { onEach(it) }
         .launchIn(lifecycle.lifecycleScope)
 }

@@ -26,8 +26,8 @@ abstract class BaseViewModel(private val app: Application) : AndroidViewModel(ap
     }
 
     private val _result = MutableSharedFlow<Spanned?>(
-        replay = 1,
-        extraBufferCapacity = 10,
+        replay = 0,
+        extraBufferCapacity = 2,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
 

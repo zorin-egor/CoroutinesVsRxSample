@@ -18,7 +18,7 @@ import kotlin.random.Random
 class CoroutineViewModel(application: Application) : BaseViewModel(application), Actions {
 
     private suspend fun suspendLongAction(): UInt {
-        return runInterruptible(block = ::longActionResult)
+        return runInterruptible(block = ::longActionResult, context = Dispatchers.IO)
     }
 
     private suspend fun suspendLongActionEmit(
@@ -39,9 +39,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             error("CoroutineExceptionHandler(${error.message ?: "-"})")
         }) {
             start()
-            withContext(Dispatchers.IO) {
-                suspendLongAction()
-            }
+            suspendLongAction()
         }.apply {
             invokeOnCompletion {
                 if (it == null) {
@@ -53,14 +51,11 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
 
     override fun single() {
         viewModelScope.coroutineContext.cancelChildren()
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.Main + CoroutineExceptionHandler { context, error ->
+            error("CoroutineExceptionHandler(${error.message ?: "-"})")
+        }) {
             start()
-            try {
-                withContext(Dispatchers.IO) { suspendLongAction() }
-                    .apply(::result)
-            } catch (e: Exception) {
-                error(e.message)
-            }
+            suspendLongAction().apply(::result)
         }.apply {
             invokeOnCompletion {
                 message("invokeOnCompletion(${it?.message ?: ""})")
@@ -106,7 +101,6 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
                 }
                 close()
             }
-//            .buffer(Channel.CONFLATED)
             .conflate()
             .flowOn(Dispatchers.IO)
             .onStart {
@@ -480,8 +474,8 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             3 -> Channel<Int>(Channel.BUFFERED).also { emiterChannel = it }.receiveAsFlow()
             4 -> MutableStateFlow<Int>(0).also { emiterFlow = it }.asStateFlow()
             else -> MutableSharedFlow<Int>(
-                replay = 100,
-                extraBufferCapacity = 100,
+                replay = 0,
+                extraBufferCapacity = 1,
                 onBufferOverflow = BufferOverflow.DROP_OLDEST
             ).also { emiterFlow = it }.asSharedFlow()
         }
@@ -544,7 +538,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             .onCompletion { emit("Observable done") }
             .onEach { emit("Observable: $it", R.color.colorThree) }
             .flowOn(Dispatchers.Main)
-            .flatMapMerge { pair ->
+            .flatMapMerge { triple ->
                 callbackFlow {
                     val threadName = Thread.currentThread().name
                     val thread = threadActionEmit(delay = 2000, count = 5U, emitter = { index, value ->
