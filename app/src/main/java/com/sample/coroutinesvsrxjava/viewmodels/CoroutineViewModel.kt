@@ -3,12 +3,45 @@ package com.sample.coroutinesvsrxjava.viewmodels
 import android.app.Application
 import androidx.lifecycle.viewModelScope
 import com.sample.coroutinesvsrxjava.R
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.trySendBlocking
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.buffer
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapConcat
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flatMapMerge
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.zip
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlin.coroutines.resume
 import kotlin.random.Random
 
@@ -369,7 +402,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
         viewModelScope.launch {
             callbackFlow {
                 val threadName = Thread.currentThread().name
-                val thread = threadActionEmit(delay = 5000, count = 5U, emitter = { index, value ->
+                val thread = threadActionEmit(delay = 500, count = 5U, emitter = { index, value ->
                     trySendBlocking(Triple(index, value, "${Thread.currentThread().name}, $threadName"))
                 }, complete = {
                     close()
@@ -387,7 +420,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
                     trySend(">$triple")
 
                     val threadName = Thread.currentThread().name
-                    val thread = threadActionEmit(delay = 2000, count = 4U, emitter = { index, value ->
+                    val thread = threadActionEmit(delay = 4000, count = 4U, emitter = { index, value ->
                         trySendBlocking("${index + 1U}-$value, ${Thread.currentThread().name}, $threadName")
                     }, complete = {
                         close()
@@ -522,21 +555,51 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             emit("Single: ${single.toString()}", R.color.colorTwo)
             emit("Single done")
 
-            callbackFlow {
-                val threadName = Thread.currentThread().name
-                val thread = threadActionEmit(delay = 4000, count = 5U, emitter = { index, value ->
-                    trySendBlocking(Triple(index, value, "${Thread.currentThread().name}, $threadName"))
-                }, complete = {
-                    close()
-                }, error = {
-                    close(it)
-                })
+            val hotFlow = MutableSharedFlow<String>(
+                replay = 1,
+                extraBufferCapacity = 10,
+                onBufferOverflow = BufferOverflow.DROP_LATEST
+            )
 
-                awaitClose { thread.interrupt() }
+//            val hotFlow = Channel<String>(
+////                capacity = Channel.CONFLATED,
+//                onBufferOverflow = BufferOverflow.DROP_LATEST
+//            )
+
+            launch {
+                var counter = 10
+                while (counter > 0) {
+                    hotFlow.emit("HotFlow: ${counter--}")
+                    delay(500)
+                }
+            }
+
+            launch {
+                hotFlow.asSharedFlow().collect {
+                    emit(value = "Second subscriber: $it", colorId = R.color.colorTwo)
+                    delay(500)
+                }
+            }
+
+            delay(2000)
+
+            hotFlow.asSharedFlow()
+                .flatMapMerge { hotValue ->
+                callbackFlow {
+                    val threadName = Thread.currentThread().name
+                    val thread = threadActionEmit(delay = 4000, count = 5U, emitter = { index, value ->
+                        trySendBlocking(Triple(index, "$value - $hotValue", "${Thread.currentThread().name}, $threadName"))
+                    }, complete = {
+                        close()
+                    }, error = {
+                        close(it)
+                    })
+
+                    awaitClose { thread.interrupt() }
+                }
             }
             .flowOn(Dispatchers.IO)
-            .onCompletion { emit("Observable done") }
-            .onEach { emit("Observable: $it", R.color.colorThree) }
+            .onEach { emit("Flowable one: $it", R.color.colorThree) }
             .flowOn(Dispatchers.Main)
             .flatMapMerge { triple ->
                 callbackFlow {
@@ -552,7 +615,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
                     awaitClose { thread.interrupt() }
                 }
                 .flowOn(Dispatchers.IO)
-                .onEach { emit("Flowable: $it", R.color.colorFour) }
+                .onEach { emit("Flowable two: $it", R.color.colorFour) }
                 .onCompletion { emit("Flowable done") }
                 .flowOn(Dispatchers.Main)
             }

@@ -27,7 +27,7 @@ abstract class BaseViewModel(private val app: Application) : AndroidViewModel(ap
 
     private val _result = MutableSharedFlow<Spanned?>(
         replay = 0,
-        extraBufferCapacity = 2,
+        extraBufferCapacity = 1000,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
 
@@ -45,7 +45,7 @@ abstract class BaseViewModel(private val app: Application) : AndroidViewModel(ap
     protected fun longActionEmit(
         delay: Long = 3000,
         count: UInt = 10U,
-        isError: Boolean = true,
+        isError: Boolean = false,
         emitter: (UInt, UInt) -> Unit
     ) {
         try {
