@@ -5,12 +5,14 @@ import androidx.lifecycle.viewModelScope
 import com.sample.coroutinesvsrxjava.R
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
@@ -72,10 +74,10 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
     }
 
     override fun completable() {
-        fun getJob(suffixName: String = "job") = if (Random.nextBoolean()) {
-            Job() + CoroutineName("Simple $suffixName")
-        } else {
-            SupervisorJob() + CoroutineName("Supervisor $suffixName")
+        fun CoroutineScope.getJob(suffixName: String = "job") = when(Random.nextInt(3)) {
+            0 -> Job() + CoroutineName("Simple $suffixName")
+            1 -> SupervisorJob() + CoroutineName("Supervisor $suffixName")
+            else -> coroutineContext.job
         }
 
         viewModelScope.coroutineContext.cancelChildren()
@@ -84,12 +86,13 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
         }) {
             start()
 
-            launch {
+            launch(context = coroutineContext + getJob()) {
                 delay(2000)
                 emit("Some async main work: ${coroutineContext[CoroutineName]}")
             }
 
-            launch(context = getJob()) {
+            launch {
+                delay(1000)
                 throw IllegalArgumentException()
             }
 
@@ -97,35 +100,39 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
                 0 -> launch(context = coroutineContext + getJob() + CoroutineExceptionHandler { context, error ->
                     error("IsolatedChildCoroutineExceptionHandler0(${error.message ?: "-"}, ${context[CoroutineName]})")
                 }) {
+                    emit("Random 0")
+
                     launch {
                         delay(500)
                         emit("IsolatedChildOfChild0(${coroutineContext[CoroutineName]})")
                     }
 
-                    val childJob = when(Random.nextInt(3)) {
-                        0 -> Job() + CoroutineName("Simple child job")
-                        1 -> SupervisorJob() + CoroutineName("Supervisor child job")
-                        else -> coroutineContext.job
-                    }
-
-                    launch(context = coroutineContext + childJob) {
+                    launch(context = coroutineContext + getJob("child job")) {
                         throw IllegalArgumentException("Isolated child throw 0")
                     }
                 }
                 1 -> launch(context = coroutineContext + CoroutineExceptionHandler { context, error ->
                     error("ChildCoroutineExceptionHandler1(${error.message ?: "-"}, ${context[CoroutineName]})")
                 }) {
+                    emit("Random 1")
                     throw IllegalArgumentException("Child throw 1")
                 }
                 2 -> launch(context = coroutineContext + getJob()) {
                     async {
+                        emit("Random 2")
                         throw IllegalArgumentException("Isolated Child throw 2")
                     }.await()
                 }
                 3 -> launch(context = coroutineContext) {
                     async {
+                        emit("Random 3")
                         throw IllegalArgumentException("Child throw 3")
                     }.await()
+                }
+                4 -> {
+                    emit("Random 4")
+                    delay(500)
+                    cancel("Random cancel")
                 }
             }
 
