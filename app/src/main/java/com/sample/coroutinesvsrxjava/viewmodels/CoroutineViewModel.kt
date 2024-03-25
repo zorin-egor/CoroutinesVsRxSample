@@ -7,6 +7,8 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
@@ -71,13 +73,53 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
         viewModelScope.launch(Dispatchers.Main + CoroutineExceptionHandler { context, error ->
             error("CoroutineExceptionHandler(${error.message ?: "-"})")
         }) {
+
             start()
+
+            when(Random.nextInt(10)) {
+                0 -> launch(context = coroutineContext + SupervisorJob() + CoroutineExceptionHandler { context, error ->
+                    error("IsolatedChildCoroutineExceptionHandler0(${error.message ?: "-"})")
+                }) {
+                    async {
+                        throw IllegalArgumentException("Isolated child throw 0")
+                    }.await()
+                }
+                1 -> launch(context = coroutineContext + CoroutineExceptionHandler { context, error ->
+                    error("ChildCoroutineExceptionHandler1(${error.message ?: "-"})")
+                }) {
+                    throw IllegalArgumentException("Child throw 1")
+                }
+                2 -> launch(context = coroutineContext + SupervisorJob()) {
+                    async {
+                        throw IllegalArgumentException("Isolated Child throw 2")
+                    }.await()
+                }
+                3 -> launch(context = coroutineContext) {
+                    async {
+                        throw IllegalArgumentException("Child throw 3")
+                    }.await()
+                }
+                4 -> withContext(context = coroutineContext + SupervisorJob() + CoroutineExceptionHandler { context, error ->
+                    error("IsolatedExceptionHandler4(${error.message ?: "-"})")
+                }) {
+                    async {
+                        throw IllegalArgumentException("Isolated throw 4")
+                    }.await()
+                }
+                5 -> withContext(context = coroutineContext + CoroutineExceptionHandler { context, error ->
+                    error("IsolatedExceptionHandler5(${error.message ?: "-"})")
+                }) {
+                    async {
+                        throw IllegalArgumentException("Isolated throw 5")
+                    }.await()
+                }
+            }
+
             suspendLongAction()
+            result("Success")
         }.apply {
             invokeOnCompletion {
-                if (it == null) {
-                    result("invokeOnCompletion()")
-                }
+                result("invokeOnCompletion(${it?.message})")
             }
         }
     }
