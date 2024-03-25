@@ -4,9 +4,11 @@ import android.app.Application
 import androidx.lifecycle.viewModelScope
 import com.sample.coroutinesvsrxjava.R
 import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelChildren
@@ -39,6 +41,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.zip
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -69,27 +72,48 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
     }
 
     override fun completable() {
-        viewModelScope.coroutineContext.cancelChildren()
-        viewModelScope.launch(Dispatchers.Main + CoroutineExceptionHandler { context, error ->
-            error("CoroutineExceptionHandler(${error.message ?: "-"})")
-        }) {
+        val job = if (Random.nextBoolean()) {
+            Job() + CoroutineName("Simple job")
+        } else {
+            SupervisorJob() + CoroutineName("Supervisor job")
+        }
 
+        viewModelScope.coroutineContext.cancelChildren()
+        viewModelScope.launch(Dispatchers.Main + CoroutineName("Main") + CoroutineExceptionHandler { context, error ->
+            error("CoroutineExceptionHandler(${error.message ?: "-"}, ${context[CoroutineName]})")
+        }) {
             start()
 
+            launch {
+                delay(3000)
+                emit("Some async main work: ${coroutineContext[CoroutineName]}")
+            }
+
             when(Random.nextInt(10)) {
-                0 -> launch(context = coroutineContext + SupervisorJob() + CoroutineExceptionHandler { context, error ->
-                    error("IsolatedChildCoroutineExceptionHandler0(${error.message ?: "-"})")
+                0 -> launch(context = coroutineContext + job + CoroutineExceptionHandler { context, error ->
+                    error("IsolatedChildCoroutineExceptionHandler0(${error.message ?: "-"}, ${context[CoroutineName]})")
                 }) {
-                    async {
+                    launch {
+                        delay(500)
+                        emit("IsolatedChildOfChild0(${coroutineContext[CoroutineName]})")
+                    }
+
+                    val childJob = when(Random.nextInt(3)) {
+                        0 -> Job() + CoroutineName("Simple child job")
+                        1 -> SupervisorJob() + CoroutineName("Supervisor child job")
+                        else -> coroutineContext.job
+                    }
+
+                    launch(context = coroutineContext + childJob) {
                         throw IllegalArgumentException("Isolated child throw 0")
-                    }.await()
+                    }
                 }
                 1 -> launch(context = coroutineContext + CoroutineExceptionHandler { context, error ->
-                    error("ChildCoroutineExceptionHandler1(${error.message ?: "-"})")
+                    error("ChildCoroutineExceptionHandler1(${error.message ?: "-"}, ${context[CoroutineName]})")
                 }) {
                     throw IllegalArgumentException("Child throw 1")
                 }
-                2 -> launch(context = coroutineContext + SupervisorJob()) {
+                2 -> launch(context = coroutineContext + job) {
                     async {
                         throw IllegalArgumentException("Isolated Child throw 2")
                     }.await()
@@ -99,15 +123,15 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
                         throw IllegalArgumentException("Child throw 3")
                     }.await()
                 }
-                4 -> withContext(context = coroutineContext + SupervisorJob() + CoroutineExceptionHandler { context, error ->
-                    error("IsolatedExceptionHandler4(${error.message ?: "-"})")
+                4 -> withContext(context = coroutineContext + job + CoroutineExceptionHandler { context, error ->
+                    error("IsolatedExceptionHandler4(${error.message ?: "-"}, ${context[CoroutineName]})")
                 }) {
                     async {
                         throw IllegalArgumentException("Isolated throw 4")
                     }.await()
                 }
                 5 -> withContext(context = coroutineContext + CoroutineExceptionHandler { context, error ->
-                    error("IsolatedExceptionHandler5(${error.message ?: "-"})")
+                    error("IsolatedExceptionHandler5(${error.message ?: "-"}, ${context[CoroutineName]})")
                 }) {
                     async {
                         throw IllegalArgumentException("Isolated throw 5")
