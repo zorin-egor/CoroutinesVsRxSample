@@ -72,10 +72,10 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
     }
 
     override fun completable() {
-        val job = if (Random.nextBoolean()) {
-            Job() + CoroutineName("Simple job")
+        fun getJob(suffixName: String = "job") = if (Random.nextBoolean()) {
+            Job() + CoroutineName("Simple $suffixName")
         } else {
-            SupervisorJob() + CoroutineName("Supervisor job")
+            SupervisorJob() + CoroutineName("Supervisor $suffixName")
         }
 
         viewModelScope.coroutineContext.cancelChildren()
@@ -85,12 +85,16 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             start()
 
             launch {
-                delay(3000)
+                delay(2000)
                 emit("Some async main work: ${coroutineContext[CoroutineName]}")
             }
 
-            when(Random.nextInt(10)) {
-                0 -> launch(context = coroutineContext + job + CoroutineExceptionHandler { context, error ->
+            launch(context = getJob()) {
+                throw IllegalArgumentException()
+            }
+
+            when(Random.nextInt(8)) {
+                0 -> launch(context = coroutineContext + getJob() + CoroutineExceptionHandler { context, error ->
                     error("IsolatedChildCoroutineExceptionHandler0(${error.message ?: "-"}, ${context[CoroutineName]})")
                 }) {
                     launch {
@@ -113,7 +117,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
                 }) {
                     throw IllegalArgumentException("Child throw 1")
                 }
-                2 -> launch(context = coroutineContext + job) {
+                2 -> launch(context = coroutineContext + getJob()) {
                     async {
                         throw IllegalArgumentException("Isolated Child throw 2")
                     }.await()
@@ -121,20 +125,6 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
                 3 -> launch(context = coroutineContext) {
                     async {
                         throw IllegalArgumentException("Child throw 3")
-                    }.await()
-                }
-                4 -> withContext(context = coroutineContext + job + CoroutineExceptionHandler { context, error ->
-                    error("IsolatedExceptionHandler4(${error.message ?: "-"}, ${context[CoroutineName]})")
-                }) {
-                    async {
-                        throw IllegalArgumentException("Isolated throw 4")
-                    }.await()
-                }
-                5 -> withContext(context = coroutineContext + CoroutineExceptionHandler { context, error ->
-                    error("IsolatedExceptionHandler5(${error.message ?: "-"}, ${context[CoroutineName]})")
-                }) {
-                    async {
-                        throw IllegalArgumentException("Isolated throw 5")
                     }.await()
                 }
             }
