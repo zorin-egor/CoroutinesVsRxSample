@@ -33,10 +33,11 @@ abstract class BaseViewModel(private val app: Application) : AndroidViewModel(ap
 
     val result: Flow<Spanned?> = _result.asSharedFlow()
 
-    protected fun longActionResult(delay: Long = 1000): UInt {
+    protected fun longActionResult(delay: Long = 1000, isRandomError: Boolean = true): UInt {
         return try {
             Thread.sleep(delay)
-            (Random.nextUInt() % 99U + 1U).also(::errorGenerator)
+            (Random.nextUInt() % 99U + 1U)
+                .also { if (isRandomError) errorGenerator(it) }
         } catch (e: InterruptedException) {
             0U
         }
@@ -65,10 +66,10 @@ abstract class BaseViewModel(private val app: Application) : AndroidViewModel(ap
         }
     }
 
-    protected fun threadActionResult(delay: Long = 1000, emitter: (UInt) -> Unit, error: (Exception) -> Unit): Thread {
+    protected fun threadActionResult(delay: Long = 1000, isRandomError: Boolean = true, emitter: (UInt) -> Unit, error: (Exception) -> Unit): Thread {
         return thread {
             try {
-                emitter(longActionResult(delay))
+                emitter(longActionResult(delay = delay, isRandomError = isRandomError))
             } catch (e: Exception) {
                 error(e)
             }

@@ -11,7 +11,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.channels.BufferOverflow
@@ -57,24 +56,28 @@ import kotlin.random.Random
 @ExperimentalUnsignedTypes
 class CoroutineViewModel(application: Application) : BaseViewModel(application), Actions {
 
-    private suspend fun suspendLongAction(): UInt {
-        return runInterruptible(block = ::longActionResult, context = Dispatchers.IO)
+    private suspend fun suspendLongAction(delay: Long = 1000, isRandomError: Boolean = true): UInt {
+        return runInterruptible(
+            block = { longActionResult(delay = delay, isRandomError = isRandomError) },
+            context = Dispatchers.IO
+        )
     }
 
     private suspend fun suspendLongActionEmit(
         delay: Long = 3000,
         count: UInt = 10U,
+        isError: Boolean = false,
         emitter: (UInt, UInt) -> Unit
     ) {
         return runInterruptible {
-            longActionEmit(delay, count, false) { index, value ->
+            longActionEmit(delay, count, isError) { index, value ->
                 emitter(index, value)
             }
         }
     }
 
     override fun completable() {
-        fun CoroutineScope.getJob(suffixName: String = "job") = when(Random.nextInt(3)) {
+        fun CoroutineScope.getJob(suffixName: String = "job", type: Int? = null) = when(type ?: Random.nextInt(3)) {
             0 -> Job() + CoroutineName("Simple $suffixName")
             1 -> SupervisorJob() + CoroutineName("Supervisor $suffixName")
             else -> coroutineContext.job
@@ -86,57 +89,58 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
         }) {
             start()
 
-            launch(context = coroutineContext + getJob()) {
-                delay(2000)
-                emit("Some async main work: ${coroutineContext[CoroutineName]}")
-            }
-
-            launch {
-                delay(1000)
-                throw IllegalArgumentException()
-            }
-
-            when(Random.nextInt(8)) {
-                0 -> launch(context = coroutineContext + getJob() + CoroutineExceptionHandler { context, error ->
-                    error("IsolatedChildCoroutineExceptionHandler0(${error.message ?: "-"}, ${context[CoroutineName]})")
-                }) {
+            when(0 ?: Random.nextInt(5)) {
+                0 -> {
                     emit("Random 0")
 
                     launch {
-                        delay(500)
-                        emit("IsolatedChildOfChild0(${coroutineContext[CoroutineName]})")
+                        delay(2000)
+                        emit("Child0(${coroutineContext[CoroutineName]})")
                     }
 
-                    launch(context = coroutineContext + getJob("child job")) {
-                        throw IllegalArgumentException("Isolated child throw 0")
+                    launch(context = coroutineContext + getJob(suffixName = "child job", type = 1)) {
+                        throw IllegalArgumentException("Child throw 0")
                     }
                 }
-                1 -> launch(context = coroutineContext + CoroutineExceptionHandler { context, error ->
-                    error("ChildCoroutineExceptionHandler1(${error.message ?: "-"}, ${context[CoroutineName]})")
+
+                1 -> launch(context = coroutineContext + getJob(suffixName = "child job", type = 2) + CoroutineExceptionHandler { context, error ->
+                    error("ChildExceptionHandler1(${error.message ?: "-"}, ${context[CoroutineName]})")
                 }) {
                     emit("Random 1")
-                    throw IllegalArgumentException("Child throw 1")
+
+                    launch {
+                        delay(2000)
+                        emit("Child1(${coroutineContext[CoroutineName]})")
+                    }
+
+                    launch(context = coroutineContext + getJob(suffixName = "child job", type = 1)) {
+                        throw IllegalArgumentException("Child throw 1")
+                    }
                 }
-                2 -> launch(context = coroutineContext + getJob()) {
-                    async {
-                        emit("Random 2")
-                        throw IllegalArgumentException("Isolated Child throw 2")
-                    }.await()
-                }
-                3 -> launch(context = coroutineContext) {
-                    async {
-                        emit("Random 3")
-                        throw IllegalArgumentException("Child throw 3")
-                    }.await()
-                }
-                4 -> {
-                    emit("Random 4")
-                    delay(500)
-                    cancel("Random cancel")
+
+                2 -> launch(context = coroutineContext + CoroutineExceptionHandler { context, error ->
+                    error("ChildExceptionHandler2(${error.message ?: "-"}, ${context[CoroutineName]})")
+                }) {
+                    emit("Random 2")
+
+                    launch {
+                        delay(2000)
+                        emit("Child2(${coroutineContext[CoroutineName]})")
+                    }
+
+                    launch(context = coroutineContext + getJob(suffixName = "child job", type = 1)) {
+                        throw IllegalArgumentException("Child throw 2")
+                    }
                 }
             }
 
-            suspendLongAction()
+            if (null ?: Random.nextBoolean()) {
+                emit("Random cancel")
+                delay(500)
+                cancel("Random cancel reason")
+            }
+
+            suspendLongAction(delay = 1000, isRandomError = false)
             result("Success")
         }.apply {
             invokeOnCompletion {
@@ -192,7 +196,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
         viewModelScope.coroutineContext.cancelChildren()
         viewModelScope.launch {
             callbackFlow<Pair<UInt, UInt>> {
-                suspendLongActionEmit(0, 1000U) { index, value ->
+                suspendLongActionEmit(delay = 0, count = 1000U) { index, value ->
                     trySend(index to value)
                 }
                 close()
