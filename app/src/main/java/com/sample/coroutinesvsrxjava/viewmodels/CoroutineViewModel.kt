@@ -17,6 +17,7 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.trySendBlocking
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -76,6 +77,15 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
         }
     }
 
+    private suspend fun someLongWorkScope() {
+        coroutineScope {
+            launch(SupervisorJob()) {
+                delay(5000)
+                message("someWork(${coroutineContext[CoroutineName]})")
+            }
+        }
+    }
+
     override fun completable() {
         fun CoroutineScope.getJob(suffixName: String = "job", type: Int? = null) = when(type ?: Random.nextInt(3)) {
             0 -> Job() + CoroutineName("Simple $suffixName")
@@ -89,7 +99,9 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
         }) {
             start()
 
-            when(0 ?: Random.nextInt(5)) {
+            someLongWorkScope()
+            
+            when(null ?: Random.nextInt(5)) {
                 0 -> {
                     emit("Random 0")
 
