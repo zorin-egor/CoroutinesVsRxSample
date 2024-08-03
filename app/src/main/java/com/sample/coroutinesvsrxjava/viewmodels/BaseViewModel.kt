@@ -103,16 +103,20 @@ abstract class BaseViewModel(private val app: Application) : AndroidViewModel(ap
         _result.tryEmit(message)
     }
 
-    protected fun start() {
+    protected fun start(isLogClear: Boolean = true) {
         val message = (getTime() + ": ").toSpanned(app, R.color.colorText) +
                 app.getString(R.string.action_start).toSpanned(app, R.color.colorStart)
 
         Log.d(TAG, message.toString())
-        _result.tryEmit(null)
+
+        if (isLogClear) {
+            _result.tryEmit(null)
+        }
+
         _result.tryEmit(message)
     }
 
-    protected fun <T> emit(value: T, @ColorRes colorId: Int = R.color.colorProgress) {
+    protected fun <T> message(value: T, @ColorRes colorId: Int = R.color.colorProgress) {
         val message = (getTime() + ": ").toSpanned(app, R.color.colorText) +
                 app.getString(R.string.action_emit, value.toString()).toSpanned(app, colorId)
 

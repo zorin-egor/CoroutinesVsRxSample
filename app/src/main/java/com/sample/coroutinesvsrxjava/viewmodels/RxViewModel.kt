@@ -3,10 +3,18 @@ package com.sample.coroutinesvsrxjava.viewmodels
 import android.app.Application
 import com.sample.coroutinesvsrxjava.R
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
-import io.reactivex.rxjava3.core.*
+import io.reactivex.rxjava3.core.BackpressureStrategy
+import io.reactivex.rxjava3.core.Completable
+import io.reactivex.rxjava3.core.Flowable
+import io.reactivex.rxjava3.core.Observable
+import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.disposables.CompositeDisposable
 import io.reactivex.rxjava3.schedulers.Schedulers
-import io.reactivex.rxjava3.subjects.*
+import io.reactivex.rxjava3.subjects.AsyncSubject
+import io.reactivex.rxjava3.subjects.BehaviorSubject
+import io.reactivex.rxjava3.subjects.PublishSubject
+import io.reactivex.rxjava3.subjects.ReplaySubject
+import io.reactivex.rxjava3.subjects.UnicastSubject
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
@@ -77,9 +85,9 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             .doOnSubscribe {
                 start()
             }.doFinally {
-                message("doFinally()")
+                    message("doFinally()")
             }.subscribe({ result ->
-                emit(result)
+                message(result)
             }, {
                 error(it.message)
             })
@@ -103,10 +111,10 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
                 message("total items: $items")
             }.doFinally {
                 message("processed items: $processedItems")
-                message("doFinally()")
+                    message("doFinally()")
             }.subscribe({ result ->
                 ++processedItems
-                emit(result)
+                message(result)
             }, {
                 error(it.message)
             })
@@ -132,7 +140,7 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             .doOnSubscribe {
                 start()
             }.doFinally {
-                message("doFinally()")
+                    message("doFinally()")
             }.subscribe({ result ->
                 result(result)
             }, {
@@ -161,7 +169,7 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             .doOnSubscribe {
                 start()
             }.doFinally {
-                message("doFinally()")
+                    message("doFinally()")
             }.subscribe({ result ->
                 result(result)
             }, {
@@ -201,9 +209,9 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             .doOnSubscribe {
                 start()
             }.doFinally {
-                message("doFinally()")
+                    message("doFinally()")
             }.subscribe({ result ->
-                emit(result)
+                message(result)
             }, {
                 error(it.message)
             })
@@ -241,9 +249,9 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             .doOnSubscribe {
                 start()
             }.doFinally {
-                message("doFinally()")
+                    message("doFinally()")
             }.subscribe({ result ->
-                emit(result)
+                message(result)
             }, {
                 error(it.message)
             })
@@ -290,9 +298,9 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             .doOnSubscribe {
                 start()
             }.doFinally {
-                message("doFinally()")
+                    message("doFinally()")
             }.subscribe({ result ->
-                emit(result)
+                message(result)
             }, {
                 error(it.message)
             })
@@ -339,9 +347,9 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             .doOnSubscribe {
                 start()
             }.doFinally {
-                message("doFinally()")
+                    message("doFinally()")
             }.subscribe({ result ->
-                emit(result)
+                message(result)
             }, {
                 error(it.message)
             })
@@ -388,9 +396,9 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             .doOnSubscribe {
                 start()
             }.doFinally {
-                message("doFinally()")
+                    message("doFinally()")
             }.subscribe({ result ->
-                emit(result)
+                message(result)
             }, {
                 error(it.message)
             })
@@ -412,7 +420,7 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
                 }.doFinally {
                     message("doFinally()")
                 }.subscribe { result ->
-                    emit(result)
+                    message(result)
                 }
         )
     }
@@ -440,7 +448,7 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
                 }.doFinally {
                     message("doFinally()")
                 }.subscribe { result ->
-                    emit(result)
+                    message(result)
                 }
         )
     }
@@ -460,7 +468,7 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             bus.delaySubscription(1000, TimeUnit.MILLISECONDS)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
-                    emit("one - $it")
+                    message("one - $it")
                 }, {
                     error(it.message)
                 })
@@ -470,7 +478,7 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             bus.delaySubscription(2000, TimeUnit.MILLISECONDS)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
-                    emit("two - $it")
+                    message("two - $it")
                 }, {
                     error(it.message)
                 })
@@ -497,12 +505,12 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
 
         val completable = Completable.fromAction(::longActionResult)
             .observeOn(AndroidSchedulers.mainThread())
-            .doFinally { emit("Complete done", R.color.colorOne) }
+            .doFinally { message("Complete done", R.color.colorOne) }
 
         val single = Single.fromCallable(::longActionResult)
             .observeOn(AndroidSchedulers.mainThread())
-            .doAfterSuccess { emit("Single: ${it.toString()}", R.color.colorTwo) }
-            .doFinally { emit("Single done") }
+            .doAfterSuccess { message("Single: ${it.toString()}", R.color.colorTwo) }
+            .doFinally { message("Single done") }
 
         val observable = Observable.create<Triple<UInt, UInt, String>> { emiter ->
             val threadName = Thread.currentThread().name
@@ -516,8 +524,8 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
 
             emiter.setCancellable { thread.interrupt() }
         }.observeOn(AndroidSchedulers.mainThread())
-            .doOnNext { emit("Observable: $it", R.color.colorThree) }
-            .doFinally { emit("Observable done") } // Wrong thread with switchMap http://reactivex.io/RxJava/2.x/javadoc/io/reactivex/Observable.html#doFinally-io.reactivex.functions.Action-
+            .doOnNext { message("Observable: $it", R.color.colorThree) }
+            .doFinally { message("Observable done") } // Wrong thread with switchMap http://reactivex.io/RxJava/2.x/javadoc/io/reactivex/Observable.html#doFinally-io.reactivex.functions.Action-
 
         val flowable = Flowable.create<Triple<UInt, UInt, String>> ({ emiter ->
             val threadName = Thread.currentThread().name
@@ -532,8 +540,8 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             emiter.setCancellable { thread.interrupt() }
         }, BackpressureStrategy.BUFFER)
             .observeOn(AndroidSchedulers.mainThread())
-            .doOnNext { emit("Flowable: $it", R.color.colorFour) }
-            .doFinally { emit("Flowable done") } // Wrong thread with switchMap http://reactivex.io/RxJava/2.x/javadoc/io/reactivex/Observable.html#doFinally-io.reactivex.functions.Action-
+            .doOnNext { message("Flowable: $it", R.color.colorFour) }
+            .doFinally { message("Flowable done") } // Wrong thread with switchMap http://reactivex.io/RxJava/2.x/javadoc/io/reactivex/Observable.html#doFinally-io.reactivex.functions.Action-
 
         compositeDisposable.add(completable
             .observeOn(Schedulers.io())

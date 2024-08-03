@@ -51,6 +51,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlin.coroutines.resume
 import kotlin.random.Random
+import kotlin.random.nextUInt
 
 @FlowPreview
 @ExperimentalCoroutinesApi
@@ -103,11 +104,11 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             
             when(null ?: Random.nextInt(5)) {
                 0 -> {
-                    emit("Random 0")
+                    message("Random 0")
 
                     launch {
                         delay(2000)
-                        emit("Child0(${coroutineContext[CoroutineName]})")
+                        message("Child0(${coroutineContext[CoroutineName]})")
                     }
 
                     launch(context = coroutineContext + getJob(suffixName = "child job", type = 1)) {
@@ -118,11 +119,11 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
                 1 -> launch(context = coroutineContext + getJob(suffixName = "child job", type = 2) + CoroutineExceptionHandler { context, error ->
                     error("ChildExceptionHandler1(${error.message ?: "-"}, ${context[CoroutineName]})")
                 }) {
-                    emit("Random 1")
+                    message("Random 1")
 
                     launch {
                         delay(2000)
-                        emit("Child1(${coroutineContext[CoroutineName]})")
+                        message("Child1(${coroutineContext[CoroutineName]})")
                     }
 
                     launch(context = coroutineContext + getJob(suffixName = "child job", type = 1)) {
@@ -133,11 +134,11 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
                 2 -> launch(context = coroutineContext + CoroutineExceptionHandler { context, error ->
                     error("ChildExceptionHandler2(${error.message ?: "-"}, ${context[CoroutineName]})")
                 }) {
-                    emit("Random 2")
+                    message("Random 2")
 
                     launch {
                         delay(2000)
-                        emit("Child2(${coroutineContext[CoroutineName]})")
+                        message("Child2(${coroutineContext[CoroutineName]})")
                     }
 
                     launch(context = coroutineContext + getJob(suffixName = "child job", type = 1)) {
@@ -147,7 +148,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             }
 
             if (null ?: Random.nextBoolean()) {
-                emit("Random cancel")
+                message("Random cancel")
                 delay(500)
                 cancel("Random cancel reason")
             }
@@ -177,29 +178,50 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
 
     override fun observable() {
         viewModelScope.coroutineContext.cancelChildren()
-        viewModelScope.launch {
-            callbackFlow {
-                val thread = threadActionEmit(emitter = { index, value ->
-                    trySendBlocking(index to value)
-                }, complete = {
-                    close()
-                }, error = {
-                    close(it)
-                })
 
-                awaitClose {
-                    thread.interrupt()
+        val job = viewModelScope.launch {
+            val flow = kotlinx.coroutines.flow.flow<Pair<UInt, UInt>>{
+                repeat(10) {
+                    emit(it.toUInt() to Random.nextUInt())
+                    delay(100)
+                    if (Random.nextInt() % 10 == 0) {
+                        throw NullPointerException("Unexpected error")
+                    }
                 }
             }
-            .flowOn(Dispatchers.IO)
-            .onStart {
-                start()
-            }.onCompletion {
-                message("onCompletion(${it?.message ?: ""})")
-            }.catch {
+            .catch {
                 error(it.message)
-            }.collect { result ->
-                emit(result)
+            }
+            .flowOn(Dispatchers.IO)
+            .onEach {
+                message(value = "onEach: ${Thread.currentThread().name}", colorId = R.color.colorThree)
+                delay(200)
+            }
+            .onStart {
+                start(isLogClear = false)
+            }.onCompletion {
+                message(value = "onCompletion(${it?.message ?: ""})", colorId = R.color.colorTwo)
+            }
+
+            flow.collect { result ->
+                message(value = result, colorId = R.color.colorOne)
+            }
+
+            delay(500)
+
+            try {
+                flow.collect { result ->
+                    message(value = result, colorId = R.color.colorTwo)
+                }
+            } catch (e: Exception) {
+                error(e)
+            }
+        }
+
+        viewModelScope.launch {
+            delay(2000)
+            if (Random.nextInt() % 10 == 0) {
+                job.cancel()
             }
         }
     }
@@ -223,7 +245,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             }.catch {
                 error(it.message)
             }.collect { result ->
-                emit(result)
+                message(result)
             }
         }
     }
@@ -324,11 +346,11 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             .onStart {
                 start()
             }.onCompletion {
-                message("onCompletion(${it?.message ?: ""})")
+                    message("onCompletion(${it?.message ?: ""})")
             }.catch {
                 error(it.message)
             }.collect { result ->
-                emit(result)
+                message(result)
             }
         }
     }
@@ -373,7 +395,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             }.catch {
                 error(it.message)
             }.collect { result ->
-                emit(result)
+                message(result)
             }
         }
     }
@@ -418,11 +440,11 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             .onStart {
                 start()
             }.onCompletion {
-                message("onCompletion(${it?.message ?: ""})")
+                    message("onCompletion(${it?.message ?: ""})")
             }.catch {
                 error(it.message)
             }.collect { result ->
-                emit(result)
+                message(result)
             }
         }
     }
@@ -471,7 +493,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             }.catch {
                 error(it.message)
             }.collect { result ->
-                emit(result)
+                message(result)
             }
         }
     }
@@ -516,11 +538,11 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             .onStart {
                 start()
             }.onCompletion {
-                message("onCompletion(${it?.message ?: ""})")
+                    message("onCompletion(${it?.message ?: ""})")
             }.catch {
                 error(it.message)
             }.collect { result ->
-                emit(result)
+                message(result)
             }
         }
     }
@@ -537,11 +559,11 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             .onStart {
                 start()
             }.onCompletion {
-                message("onCompletion(${it?.message ?: ""})")
+                    message("onCompletion(${it?.message ?: ""})")
             }
             .distinctUntilChanged()
             .collect { result ->
-                emit(result)
+                message(result)
             }
         }
     }
@@ -566,7 +588,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
                 message("onCompletion(${it?.message ?: ""})")
             }
             .collect { result ->
-                emit(result)
+                message(result)
             }
         }
     }
@@ -596,7 +618,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             delay(2000)
             receiver.buffer().collect {
                 delay(2000)
-                emit("one - $it")
+                message("one - $it")
             }
         }
 
@@ -604,7 +626,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             delay(4000)
             receiver.collect {
                 delay(1000)
-                emit("two - $it")
+                message("two - $it")
             }
         }
 
@@ -628,11 +650,11 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             start()
 
             withContext(Dispatchers.IO) { longActionResult() }
-            emit("Complete done", R.color.colorOne)
+            message("Complete done", R.color.colorOne)
 
             val single = withContext(Dispatchers.IO) { longActionResult() }
-            emit("Single: ${single.toString()}", R.color.colorTwo)
-            emit("Single done")
+            message("Single: ${single.toString()}", R.color.colorTwo)
+            message("Single done")
 
             val hotFlow = MutableSharedFlow<String>(
                 replay = 1,
@@ -655,7 +677,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
 
             launch {
                 hotFlow.asSharedFlow().collect {
-                    emit(value = "Second subscriber: $it", colorId = R.color.colorTwo)
+                    message(value = "Second subscriber: $it", colorId = R.color.colorTwo)
                     delay(500)
                 }
             }
@@ -678,7 +700,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
                 }
             }
             .flowOn(Dispatchers.IO)
-            .onEach { emit("Flowable one: $it", R.color.colorThree) }
+            .onEach { message("Flowable one: $it", R.color.colorThree) }
             .flowOn(Dispatchers.Main)
             .flatMapMerge { triple ->
                 callbackFlow {
@@ -694,8 +716,8 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
                     awaitClose { thread.interrupt() }
                 }
                 .flowOn(Dispatchers.IO)
-                .onEach { emit("Flowable two: $it", R.color.colorFour) }
-                .onCompletion { emit("Flowable done") }
+                .onEach { message("Flowable two: $it", R.color.colorFour) }
+                .onCompletion { message("Flowable done") }
                 .flowOn(Dispatchers.Main)
             }
             .catch { error(it.message) }
