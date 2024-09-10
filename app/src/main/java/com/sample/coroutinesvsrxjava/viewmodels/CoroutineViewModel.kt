@@ -102,59 +102,57 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
 
             someLongWorkScope()
             
-            when(null ?: Random.nextInt(5)) {
+            when(Random.nextInt(2)) {
                 0 -> {
-                    message("Random 0")
+                    message("Random 0 - start")
 
                     launch {
                         delay(2000)
-                        message("Child0(${coroutineContext[CoroutineName]})")
+                        message("Child01(${coroutineContext[CoroutineName]})")
                     }
 
-                    launch(context = coroutineContext + getJob(suffixName = "child job", type = 1)) {
-                        throw IllegalArgumentException("Child throw 0")
+                    launch {
+                        throw IllegalArgumentException("Child02 throw")
                     }
+
+                    delay(1000)
+                    message("Random 0 - end")
                 }
 
-                1 -> launch(context = coroutineContext + getJob(suffixName = "child job", type = 2) + CoroutineExceptionHandler { context, error ->
+                1 -> launch(context = coroutineContext + getJob(suffixName = "child job 1", type = 1) + CoroutineExceptionHandler { context, error ->
                     error("ChildExceptionHandler1(${error.message ?: "-"}, ${context[CoroutineName]})")
                 }) {
-                    message("Random 1")
+                    message("Random 1 - start")
 
-                    launch {
+                    launch(getJob(suffixName = "child job 11", type = 2)) {
                         delay(2000)
-                        message("Child1(${coroutineContext[CoroutineName]})")
+                        message("Child11(${coroutineContext[CoroutineName]})")
                     }
 
-                    launch(context = coroutineContext + getJob(suffixName = "child job", type = 1)) {
-                        throw IllegalArgumentException("Child throw 1")
-                    }
-                }
-
-                2 -> launch(context = coroutineContext + CoroutineExceptionHandler { context, error ->
-                    error("ChildExceptionHandler2(${error.message ?: "-"}, ${context[CoroutineName]})")
-                }) {
-                    message("Random 2")
-
-                    launch {
-                        delay(2000)
-                        message("Child2(${coroutineContext[CoroutineName]})")
+                    launch(getJob(suffixName = "child job 12", type = 1)) {
+                        throw IllegalArgumentException("Child12 throw")
                     }
 
-                    launch(context = coroutineContext + getJob(suffixName = "child job", type = 1)) {
-                        throw IllegalArgumentException("Child throw 2")
-                    }
+                    delay(1000)
+                    message("Random 1 - end")
                 }
             }
 
-            if (null ?: Random.nextBoolean()) {
-                message("Random cancel")
-                delay(500)
-                cancel("Random cancel reason")
+            when(Random.nextInt(3)) {
+                0 -> {
+                    message("Random cancel")
+                    delay(500)
+                    cancel("Random cancel reason")
+                }
+                1 -> {
+                    message("Random root throw")
+                    throw IllegalArgumentException("Root throw")
+                }
+                else -> message("No error or cancel")
             }
 
-            suspendLongAction(delay = 1000, isRandomError = false)
-            result("Success")
+            val result = suspendLongAction(delay = 1000, isRandomError = false)
+            result("Success: $result")
         }.apply {
             invokeOnCompletion {
                 result("invokeOnCompletion(${it?.message})")
@@ -194,7 +192,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             }
             .flowOn(Dispatchers.IO)
             .onEach {
-                message(value = "onEach: ${Thread.currentThread().name}", colorId = R.color.colorThree)
+                message(value = "onEach: $it,  ${Thread.currentThread().name}", colorId = R.color.colorThree)
                 delay(200)
             }
             .onStart {

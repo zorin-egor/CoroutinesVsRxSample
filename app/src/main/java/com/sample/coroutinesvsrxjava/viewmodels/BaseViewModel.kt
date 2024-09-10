@@ -140,7 +140,7 @@ abstract class BaseViewModel(private val app: Application) : AndroidViewModel(ap
         _result.tryEmit(message)
     }
 
-    private fun errorGenerator(value: UInt, mod: UInt = 15U) {
+    private fun errorGenerator(value: UInt, mod: UInt = 30U) {
         if (value % mod == 0U) {
             throw IllegalArgumentException("Some unexpected error :)")
         }
