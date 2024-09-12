@@ -34,4 +34,6 @@ interface Actions {
 
     fun chains()
 
+    fun experiments()
+
 }

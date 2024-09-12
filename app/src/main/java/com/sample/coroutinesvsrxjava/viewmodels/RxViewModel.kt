@@ -563,4 +563,8 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
             })
         );
     }
+
+    override fun experiments() {
+        message(value = "Not implemented", colorId = R.color.colorError)
+    }
 }

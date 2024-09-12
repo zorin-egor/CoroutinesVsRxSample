@@ -21,6 +21,7 @@
     <string name="action_type_distinct_debounce">Debounce</string>
     <string name="action_type_event_bus">Event bus</string>
     <string name="action_type_chains">Chains</string>
+    <string name="action_type_experiments">Experiments</string>
 
     <string-array name="button_titles">
         <item>@string/action_type_completable</item>
@@ -38,6 +39,7 @@
         <item>@string/action_type_distinct_debounce</item>
         <item>@string/action_type_event_bus</item>
         <item>@string/action_type_chains</item>
+        <item>@string/action_type_experiments</item>
     </string-array>
 
     <string name="action_start">start</string>

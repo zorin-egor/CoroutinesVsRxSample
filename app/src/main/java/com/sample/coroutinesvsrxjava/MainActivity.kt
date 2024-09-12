@@ -10,7 +10,11 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.Button
+import android.widget.CheckBox
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.annotation.IdRes
 import androidx.appcompat.app.AppCompatActivity
@@ -18,7 +22,13 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.content.ContextCompat
 import androidx.core.view.updateMargins
-import com.sample.coroutinesvsrxjava.managers.*
+import com.sample.coroutinesvsrxjava.managers.append
+import com.sample.coroutinesvsrxjava.managers.flowLifecycle
+import com.sample.coroutinesvsrxjava.managers.forEachChild
+import com.sample.coroutinesvsrxjava.managers.getVisibleRect
+import com.sample.coroutinesvsrxjava.managers.scrollBottom
+import com.sample.coroutinesvsrxjava.managers.toDp
+import com.sample.coroutinesvsrxjava.managers.toSpanned
 import com.sample.coroutinesvsrxjava.viewmodels.CoroutineViewModel
 import com.sample.coroutinesvsrxjava.viewmodels.RxViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -114,6 +124,9 @@ class MainActivity : AppCompatActivity() {
             }
             getString(R.string.action_type_chains) -> {
                 setButtonsAction(it.id, rxViewModel::chains, coroutineViewModel::chains)
+            }
+            getString(R.string.action_type_experiments) -> {
+                setButtonsAction(it.id, rxViewModel::experiments, coroutineViewModel::experiments)
             }
         }
     }

@@ -43,7 +43,6 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.zip
-import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -58,7 +57,7 @@ import kotlin.random.nextUInt
 @ExperimentalUnsignedTypes
 class CoroutineViewModel(application: Application) : BaseViewModel(application), Actions {
 
-    private suspend fun suspendLongAction(delay: Long = 1000, isRandomError: Boolean = true): UInt {
+    private suspend fun suspendLongAction(delay: Long = 1000, isRandomError: Boolean = false): UInt {
         return runInterruptible(
             block = { longActionResult(delay = delay, isRandomError = isRandomError) },
             context = Dispatchers.IO
@@ -88,74 +87,14 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
     }
 
     override fun completable() {
-        fun CoroutineScope.getJob(suffixName: String = "job", type: Int? = null) = when(type ?: Random.nextInt(3)) {
-            0 -> Job() + CoroutineName("Simple $suffixName")
-            1 -> SupervisorJob() + CoroutineName("Supervisor $suffixName")
-            else -> coroutineContext.job
-        }
-
         viewModelScope.coroutineContext.cancelChildren()
-        viewModelScope.launch(Dispatchers.Main + CoroutineName("Main") + CoroutineExceptionHandler { context, error ->
-            error("CoroutineExceptionHandler(${error.message ?: "-"}, ${context[CoroutineName]})")
-        }) {
+        viewModelScope.launch {
             start()
-
-            someLongWorkScope()
-            
-            when(Random.nextInt(2)) {
-                0 -> {
-                    message("Random 0 - start")
-
-                    launch {
-                        delay(2000)
-                        message("Child01(${coroutineContext[CoroutineName]})")
-                    }
-
-                    launch {
-                        throw IllegalArgumentException("Child02 throw")
-                    }
-
-                    delay(1000)
-                    message("Random 0 - end")
-                }
-
-                1 -> launch(context = coroutineContext + getJob(suffixName = "child job 1", type = 1) + CoroutineExceptionHandler { context, error ->
-                    error("ChildExceptionHandler1(${error.message ?: "-"}, ${context[CoroutineName]})")
-                }) {
-                    message("Random 1 - start")
-
-                    launch(getJob(suffixName = "child job 11", type = 2)) {
-                        delay(2000)
-                        message("Child11(${coroutineContext[CoroutineName]})")
-                    }
-
-                    launch(getJob(suffixName = "child job 12", type = 1)) {
-                        throw IllegalArgumentException("Child12 throw")
-                    }
-
-                    delay(1000)
-                    message("Random 1 - end")
-                }
-            }
-
-            when(Random.nextInt(3)) {
-                0 -> {
-                    message("Random cancel")
-                    delay(500)
-                    cancel("Random cancel reason")
-                }
-                1 -> {
-                    message("Random root throw")
-                    throw IllegalArgumentException("Root throw")
-                }
-                else -> message("No error or cancel")
-            }
-
-            val result = suspendLongAction(delay = 1000, isRandomError = false)
-            result("Success: $result")
+            suspendLongAction()
+            result("Complete")
         }.apply {
             invokeOnCompletion {
-                result("invokeOnCompletion(${it?.message})")
+                message("invokeOnCompletion(${it?.message ?: ""})")
             }
         }
     }
@@ -166,7 +105,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             error("CoroutineExceptionHandler(${error.message ?: "-"})")
         }) {
             start()
-            suspendLongAction().apply(::result)
+            result(suspendLongAction())
         }.apply {
             invokeOnCompletion {
                 message("invokeOnCompletion(${it?.message ?: ""})")
@@ -723,6 +662,94 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
         }.apply {
             invokeOnCompletion {
                 message("invokeOnCompletion(${it?.message ?: ""})")
+            }
+        }
+    }
+
+    override fun experiments() {
+        fun getJob(suffixName: String = "job", type: Int? = null) = when(type ?: Random.nextInt(3)) {
+            0 -> Job() + CoroutineName("Simple $suffixName")
+            1 -> SupervisorJob() + CoroutineName("Supervisor $suffixName")
+            else -> CoroutineName("Default $suffixName")
+        }
+
+        val scope = if (Random.nextBoolean()) {
+            viewModelScope.coroutineContext.cancelChildren()
+            viewModelScope
+        } else {
+            CoroutineScope(Dispatchers.Main)
+        }
+
+        val rootErrorHandler = CoroutineExceptionHandler { context, error ->
+            error("CoroutineExceptionHandler(${error.message ?: "-"}, ${context[CoroutineName]})")
+        }
+
+        val rootContext = Dispatchers.Main + rootErrorHandler + getJob(suffixName = "root job", type = 2)
+
+        scope.launch {
+            delay(5000)
+            message("Some coroutine in same scope")
+        }
+
+        scope.launch(rootContext) {
+            start()
+
+            someLongWorkScope()
+
+            when(Random.nextInt(2)) {
+                0 -> {
+                    message("Random 0 - start")
+
+                    launch {
+                        delay(2000)
+                        message("Child01(${coroutineContext[CoroutineName]})")
+                    }
+
+                    launch {
+                        throw IllegalArgumentException("Child02 throw")
+                    }
+
+                    delay(1000)
+                    message("Random 0 - end")
+                }
+
+                1 -> launch(context = coroutineContext + getJob(suffixName = "child job 1", type = 1) + CoroutineExceptionHandler { context, error ->
+                    error("ChildExceptionHandler1(${error.message ?: "-"}, ${context[CoroutineName]})")
+                }) {
+                    message("Random 1 - start")
+
+                    launch(getJob(suffixName = "child job 11", type = 2)) {
+                        delay(2000)
+                        message("Child11(${coroutineContext[CoroutineName]})")
+                    }
+
+                    launch(getJob(suffixName = "child job 12", type = 2)) {
+                        throw IllegalArgumentException("Child12 throw")
+                    }
+
+                    delay(1000)
+                    message("Random 1 - end")
+                }
+            }
+
+            when(Random.nextInt(3)) {
+                0 -> {
+                    message("Random cancel")
+                    delay(500)
+                    cancel("Random cancel reason")
+                }
+                1 -> {
+                    message("Random root throw")
+                    throw IllegalArgumentException("Root throw")
+                }
+                else -> message("No error or cancel")
+            }
+
+            val result = suspendLongAction(delay = 1000, isRandomError = false)
+            result("Success: $result")
+        }.apply {
+            invokeOnCompletion {
+                message(value = "invokeOnCompletion(${it?.message})", colorId = R.color.colorAccent)
             }
         }
     }
