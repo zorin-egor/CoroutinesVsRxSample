@@ -263,14 +263,10 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
         }
 
         val flowB = flowOf("1", "2", "3", "4", "5")
-            .onEach {
-                delay(500)
-            }
+            .onEach { delay(500) }
 
         val flowC = flowOf("1", "2", "3", "4", "5", "6")
-            .onEach {
-                delay(250)
-            }
+            .onEach { delay(250) }
 
         viewModelScope.coroutineContext.cancelChildren()
         viewModelScope.launch {
@@ -282,8 +278,9 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             .flowOn(Dispatchers.IO)
             .onStart {
                 start()
-            }.onCompletion {
-                    message("onCompletion(${it?.message ?: ""})")
+            }
+            .onCompletion {
+                message("onCompletion(${it?.message ?: ""})")
             }.catch {
                 error(it.message)
             }.collect { result ->
@@ -496,7 +493,7 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             .onStart {
                 start()
             }.onCompletion {
-                    message("onCompletion(${it?.message ?: ""})")
+                result("onCompletion(${it?.message ?: ""})")
             }
             .distinctUntilChanged()
             .collect { result ->
@@ -571,8 +568,8 @@ class CoroutineViewModel(application: Application) : BaseViewModel(application),
             start()
             message( "Flow is: ${receiver.javaClass.simpleName}")
             (1..20).forEach { index ->
-                emiterChannel?.trySend(index)
-                    ?: emiterFlow?.tryEmit(index)
+                emiterChannel?.send(index)
+                    ?: emiterFlow?.emit(index)
                 delay(500)
             }
         }.invokeOnCompletion {

@@ -9,6 +9,7 @@ import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.disposables.CompositeDisposable
+import io.reactivex.rxjava3.plugins.RxJavaPlugins
 import io.reactivex.rxjava3.schedulers.Schedulers
 import io.reactivex.rxjava3.subjects.AsyncSubject
 import io.reactivex.rxjava3.subjects.BehaviorSubject
@@ -30,20 +31,47 @@ class RxViewModel(application: Application) : BaseViewModel(application), Action
 
     override fun completable() {
         compositeDisposable.clear()
-        compositeDisposable.add(
-            Completable.fromAction(::longActionResult)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .doOnSubscribe {
-                    start()
-                }.doFinally {
-                    message("doFinally()")
+
+        val completable = Completable.fromAction(::longActionResult)
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .doOnSubscribe {
+                start()
+            }.doFinally {
+                message("doFinally()")
+            }
+
+        when(Random.nextInt(2)) {
+            0 -> {
+                RxJavaPlugins.setErrorHandler {
+                    error("Error handler: $it")
+                }
+
+                compositeDisposable.add(completable.doOnSubscribe {
+                    message("Without chain error handler, but with global error handler - 0")
+                }.subscribe {
+                    result("Complete")
+                })
+            }
+            1 -> {
+                RxJavaPlugins.setErrorHandler(null)
+                compositeDisposable.add(completable.doOnSubscribe {
+                    message("With local chain error handler - 1")
                 }.subscribe({
                     result("Complete")
                 }, {
                     error(it.message)
+                }))
+            }
+            else -> { // App crash
+                RxJavaPlugins.setErrorHandler(null)
+                compositeDisposable.add(completable.doOnSubscribe {
+                    message("With no chain error handlers - 2")
+                }.subscribe {
+                    result("Complete")
                 })
-        )
+            }
+        }
     }
 
     override fun single() {
